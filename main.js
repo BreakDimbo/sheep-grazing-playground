@@ -206,9 +206,9 @@ function paintGround(){
     g.putImageData(im, 0, 0);
   }
   // faint broad brush streaks across the fields (own PRNG so the rest of the board is unchanged)
-  const BST = +(Q.get('bst') ?? 0.05), BSN = +(Q.get('bsn') ?? 260), BSA = +(Q.get('bsa') ?? -0.35);
+  const BST = +(Q.get('bst') ?? 0.05), BSN = +(Q.get('bsn') ?? 260), BSA = +(Q.get('bsa') ?? -0.35), BSJ = +(Q.get('bsj') ?? 0.5);
   if (BST > 0){ const br = mulberry(+(Q.get('bseed') ?? 53)); g.save(); g.lineCap = 'round'; g.filter = `blur(${5 * s}px)`;
-    for (let k = 0; k < BSN; k++){ const x = br() * TEXW, y = br() * TEXH, L = (120 + 220 * br()) * s, an = BSA + (br() - .5) * .5, lt = br() < .5;
+    for (let k = 0; k < BSN; k++){ const x = br() * TEXW, y = br() * TEXH, L = (120 + 220 * br()) * s, an = BSA + (br() - .5) * BSJ, lt = br() < .5;
       g.strokeStyle = lt ? `rgba(235,240,170,${BST})` : `rgba(40,90,20,${BST * .8})`; g.lineWidth = (14 + 22 * br()) * s;
       g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(an) * L * .5 + (br() - .5) * 30 * s, y + Math.sin(an) * L * .5 + (br() - .5) * 30 * s, x + Math.cos(an) * L, y + Math.sin(an) * L); g.stroke(); }
     g.restore(); }
@@ -278,7 +278,7 @@ function paintGround(){
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s * +(Q.get('eb') || 1)));
   const wash = [166, 204, 104], CR = 2.6;
-  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 3), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1.8), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.8), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.2), A0 = +(Q.get('a0') ?? -0.05), RKP = +(Q.get('rkp') ?? 0.85);
+  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 2), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1.8), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.8), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.2), A0 = +(Q.get('a0') ?? -0.05), RKP = +(Q.get('rkp') ?? 0.85);
   const BA = +(Q.get('ba') ?? 0), BF = +(Q.get('bf') ?? 6), BS = +(Q.get('bs') ?? 0.25), FKT = +(Q.get('fkt') ?? 1.8), FSQ = +(Q.get('fsq') ?? 1), PZ = +(Q.get('pz') ?? 1), EMD = +(Q.get('emd') ?? 1), HZ = +(Q.get('hz') ?? 0.3), PW = +(Q.get('pw') ?? 1.5), CM0 = +(Q.get('cm0') ?? 0), EBL = +(Q.get('ebl') ?? 0), EBR = +(Q.get('ebr') ?? 0.8), EBK = +(Q.get('ebk') ?? 1);
   const bay = (t, sd) => { if (!BA) return 0; const q = t * BF + sd * 0.37, i0 = Math.floor(q), f = q - i0, w = clamp((f - (1 - BS)) / BS, 0, 1), ww = w * w * (3 - 2 * w);
     return BA * (lerp(hash2(i0, sd * 91 + 5), hash2(i0 + 1, sd * 91 + 5), ww) - 0.5) * 2; };            // stepped bays: piecewise-flat offsets with short ramps
