@@ -48,13 +48,14 @@ h1=g1.astype(np.float32)-cv2.GaussianBlur(g1,(0,0),2.0).astype(np.float32); h2=g
 b1=cv2.GaussianBlur(ref,(0,0),2.0); b2=cv2.GaussianBlur(bld,(0,0),2.0)
 lab1=rgb2lab(b1[...,::-1]/255.); lab2=rgb2lab(b2[...,::-1]/255.)
 de=deltaE_ciede2000(lab1,lab2)
+bde=deltaE_ciede2000(rgb2lab(cv2.GaussianBlur(ref,(0,0),6.0)[...,::-1]/255.),rgb2lab(cv2.GaussianBlur(bld,(0,0),6.0)[...,::-1]/255.))
 res={}
 for k,m in regions.items():
     if m.sum()<50: continue
-    res[k]=dict(ssim=round(float(smap[m].mean()),3),lf=round(float(lmap[m].mean()),3),hf=round(float(h2[m].std()/(h1[m].std()+1e-6)),2),dE=round(float(de[m].mean()),2),
+    res[k]=dict(ssim=round(float(smap[m].mean()),3),lf=round(float(lmap[m].mean()),3),hf=round(float(h2[m].std()/(h1[m].std()+1e-6)),2),dE=round(float(de[m].mean()),2),bdE=round(float(bde[m].mean()),2),
                 dL=round(float((lab2[...,0]-lab1[...,0])[m].mean()),1),da=round(float((lab2[...,1]-lab1[...,1])[m].mean()),1),db=round(float((lab2[...,2]-lab1[...,2])[m].mean()),1))
 json.dump(res,open(f'out/{tag}_scores.json','w'),indent=1)
-for k,v in res.items(): print(f'{k:8s} ssim {v["ssim"]:.3f} lf {v["lf"]:.3f} hf {v["hf"]:.2f}  dE {v["dE"]:5.2f}  dL {v["dL"]:+5.1f} da {v["da"]:+5.1f} db {v["db"]:+5.1f}')
+for k,v in res.items(): print(f'{k:8s} ssim {v["ssim"]:.3f} lf {v["lf"]:.3f} hf {v["hf"]:.2f}  dE {v["dE"]:5.2f} bdE {v["bdE"]:5.2f}  dL {v["dL"]:+5.1f} da {v["da"]:+5.1f} db {v["db"]:+5.1f}')
 # outputs
 lab=lambda im,t: cv2.putText(im.copy(),t,(14,32),cv2.FONT_HERSHEY_SIMPLEX,0.9,(40,40,40),2,cv2.LINE_AA)
 cv2.imwrite(f'out/{tag}_sbs.png',np.hstack([lab(ref,'reference (video frame)'),np.full((H,6,3),255,np.uint8),lab(bld,'recreation')]))

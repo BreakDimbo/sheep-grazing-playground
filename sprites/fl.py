@@ -7,5 +7,5 @@ for nm,im in [('ref',ref),('ours',bld)]:
     out=[]
     for cname,cm in [('Y',(dl>18)&(b>40)&(a>-20)),('W',(dl>18)&(b<25))]:
         m=(cm&fields).astype(np.uint8); n,lb,st,ce=cv2.connectedComponentsWithStats(m,8); ar=st[1:,4]
-        out.append(f"{cname} n{n-1} med{np.median(ar) if len(ar) else 0} col{np.median(im[m>0],0)[::-1] if m.sum() else ''}")
+        out.append(f"{cname} n{n-1} med{np.median(ar) if len(ar) else 0} p90{np.percentile(ar,90) if len(ar) else 0:.1f} col{np.median(im[m>0],0)[::-1] if m.sum() else ''}")
     print(nm,' | '.join(out))
