@@ -168,6 +168,24 @@ function paintGround(){
     g.lineWidth = R(0.9, 1.6) * s; g.beginPath(); g.moveTo(x, y); g.lineTo(x + R(-1, 1) * s, y - l); g.stroke();
   }
   { g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); paintTile(g, IMG_GRASS, s, TILE_A); g.restore(); }
+  // fitted low-frequency colour correction per field (quadratic in board uv; see fieldfit.py)
+  if (LAYOUT.fieldFix && !Q.has('nofix')){
+    const F = LAYOUT.fieldFix, q = 4, mw = Math.ceil(TEXW / q), mh = Math.ceil(TEXH / q);
+    const mc = document.createElement('canvas'); mc.width = mw; mc.height = mh; const m = mc.getContext('2d', { willReadFrequently: true });
+    const lay = (pts, col, bl) => { m.save(); m.scale(1 / q, 1 / q); m.filter = `blur(${bl * s / q}px)`; m.fillStyle = col; polyPath(m, P(pts)); m.fill(); m.restore(); };
+    const ch = (col, pts, bl) => { m.globalCompositeOperation = 'source-over'; m.fillStyle = '#000'; m.fillRect(0, 0, mw, mh); lay(pts, col, bl); return m.getImageData(0, 0, mw, mh).data; };
+    const mB = ch('#fff', LAYOUT.bright, 5), mD = ch('#fff', LAYOUT.dark, 8), mW = ch('#fff', LAYOUT.wheat, 3);
+    const corr = new Float32Array(mw * mh * 3), ev = (c, u, v) => c[0] + c[1] * u + c[2] * v + c[3] * u * u + c[4] * u * v + c[5] * v * v;
+    for (let j = 0; j < mh; j++) for (let i = 0; i < mw; i++){
+      const k = j * mw + i, u = (i + 0.5) * q / KU - E, v = (j + 0.5) * q / KV - E;
+      const ww = mW[k * 4] / 255, wd = mD[k * 4] / 255 * (1 - ww), wb = mB[k * 4] / 255 * (1 - mD[k * 4] / 255) * (1 - ww), wl = Math.max(0, 1 - ww - wd - wb);
+      for (let c = 0; c < 3; c++) corr[k * 3 + c] = (F.light ? ev(F.light[c], u, v) * wl : 0) + (F.bright ? ev(F.bright[c], u, v) * wb : 0) + (F.dark ? ev(F.dark[c], u, v) * wd : 0) + (F.wheat ? ev(F.wheat[c], u, v) * ww : 0);
+    }
+    const im = g.getImageData(0, 0, TEXW, TEXH), d = im.data;
+    for (let y = 0; y < TEXH; y++){ const jr = ((y / q) | 0) * mw; for (let x = 0; x < TEXW; x++){ const k = (jr + ((x / q) | 0)) * 3, o = (y * TEXW + x) * 4;
+      d[o] += corr[k]; d[o + 1] += corr[k + 1]; d[o + 2] += corr[k + 2]; } }
+    g.putImageData(im, 0, 0);
+  }
   // hedgerows: soft dark bands
   const hedges = LAYOUT.hedges.map(P); const HW = i => (LAYOUT.hedgeW ? LAYOUT.hedgeW[i] : 1) * +(Q.get('hw') || 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
