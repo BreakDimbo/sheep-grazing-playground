@@ -23,8 +23,8 @@ for r, n in enumerate(sheets):
 cv2.imwrite('site/sprites/sheep.webp', cv2.cvtColor(A, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 92])
 # trees
 TC = 384
-T = np.zeros((TC * 2, TC * 8, 4), np.uint8); cells = []
-for si, sheet in enumerate(['gen/trees.png', 'gen/trees2.png']):
+T = np.zeros((TC * 3, TC * 8, 4), np.uint8); cells = []
+for si, sheet in enumerate(['gen/trees.png', 'gen/trees2.png', 'gen/trees3.png']):
     s = key(sheet); assert len(s) == 8, (sheet, len(s))
     for i, o in enumerate(s):
         k = 370 / max(o['w'], o['h'])
