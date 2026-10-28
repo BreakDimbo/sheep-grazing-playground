@@ -1,0 +1,9 @@
+Use your built-in image generation tool (default settings) to create ONE image, then copy the resulting PNG to /workspace/sheep/gen/pink3.png. Do not edit it.
+
+The attached image is only a loose STYLE reference (do not copy it): a soft toy-like 3D-rendered cartoon tree crown in a miniature diorama, seen from above at about 35 degrees.
+
+Image content: a sprite sheet of 4 separate cartoon tree crowns in a strict 2 columns x 2 rows grid, evenly spaced, each centred in its cell, similar size, nothing overlapping, generous gaps. Background: perfectly flat uniform pure green (#00FF00), no gradient, no ground, no shadows on the background, no text.
+Each crown is ONE compact soft mass of dusty mauve-pink clay, slightly wider than tall. It is made of roughly 18-25 SMALL-to-medium irregular lobes of DIFFERENT sizes, packed together unevenly, so the silhouette is IRREGULAR and lumpy: many small uneven bumps around the outline, one or two shallow dents, slightly asymmetric, not a circle and not a neat cloud. Lobe surfaces are smooth and matte like soft clay.
+Lighting: one soft light from the upper LEFT: the upper-left lobes are light pink, the lower-right third of the crown is in a cool mauve-purple shade, creases between lobes darker purple.
+Colours: highlight #e6a6c0, mid #c9809f, shade #9e6497, deepest creases #77508a.
+NO trunk at all, nothing below the crown.

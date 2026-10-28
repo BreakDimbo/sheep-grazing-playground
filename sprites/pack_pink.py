@@ -7,10 +7,12 @@ m = im[..., 1] - np.maximum(im[..., 0], im[..., 2])           # green-ness
 fg = (m < 60).astype(np.uint8)
 n, lab, st, _ = cv2.connectedComponentsWithStats(cv2.dilate(fg, np.ones((9, 9), np.uint8)))
 comps = sorted([i for i in range(1, n) if st[i, 4] > 3000], key=lambda i: (st[i, 1] // 300, st[i, 0]))
-T = cv2.cvtColor(cv2.imread('out/trees_backup.webp', cv2.IMREAD_UNCHANGED), cv2.COLOR_BGRA2RGBA)
-meta = json.load(open('out/meta_backup.json')); TC = meta['trees']['cell']
-T = np.vstack([T, np.zeros((TC, T.shape[1], 4), np.uint8)]); row = T.shape[0] // TC - 1
-cells = meta['trees']['cells'][:24]
+BASE = sys.argv[3] if len(sys.argv) > 3 else 'out/trees_backup'   # base atlas (+ .webp / _meta.json); out/trees_r4 keeps the pink2 row and appends a 5th
+T = cv2.cvtColor(cv2.imread(BASE + '.webp', cv2.IMREAD_UNCHANGED), cv2.COLOR_BGRA2RGBA)
+meta = json.load(open(BASE.replace('trees', 'meta') + '.json')); TC = meta['trees']['cell']
+cells = meta['trees']['cells'][:24] if BASE == 'out/trees_backup' else meta['trees']['cells']; COLS = meta['trees'].get('cols', 8); start = len(cells)
+row, col0 = start // COLS, start % COLS                     # fill the next free cells (row-major, as the atlas lookup expects)
+if row >= T.shape[0] // TC: T = np.vstack([T, np.zeros((TC, T.shape[1], 4), np.uint8)])
 for c, i in enumerate(comps[:4]):
     x, y, w, h = st[i, :4]; sel = lab[y:y+h, x:x+w] == i
     mm = m[y:y+h, x:x+w]; a = np.clip((200 - mm) / 140, 0, 1) * sel
@@ -19,7 +21,7 @@ for c, i in enumerate(comps[:4]):
     rgba = np.dstack([C, a * 255]).astype(np.uint8)
     rgba = cv2.resize(rgba, (int(w * SQ), h), interpolation=cv2.INTER_AREA)
     k = 370 / max(rgba.shape[:2]); r = cv2.resize(rgba, None, fx=k, fy=k, interpolation=cv2.INTER_AREA); hh, ww = r.shape[:2]
-    x0 = c * TC + TC // 2 - ww // 2; y0 = row * TC + TC - 6 - hh; T[y0:y0+hh, x0:x0+ww] = r
+    x0 = (col0 + c) * TC + TC // 2 - ww // 2; y0 = row * TC + TC - 6 - hh; T[y0:y0+hh, x0:x0+ww] = r
     cells.append(dict(w=ww / TC, h=hh / TC))
 meta['trees']['cells'] = cells
 cv2.imwrite('site/sprites/trees.webp', cv2.cvtColor(T, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 92])
