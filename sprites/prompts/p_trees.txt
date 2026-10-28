@@ -1,0 +1,8 @@
+Use your built-in image generation tool (default settings) to create ONE image, then copy the resulting PNG to /workspace/sheep/gen/trees.png. Do not edit it.
+
+The attached image is only a STYLE reference (do not copy it): soft toy-like 3D-rendered cartoon trees in a miniature diorama, seen from above at about 35 degrees.
+
+Image content: a sprite sheet of 8 separate small cartoon trees in a strict 4 columns x 2 rows grid, evenly spaced, each centred in its cell, similar size, nothing overlapping, generous gaps. Background: perfectly flat uniform pure magenta (#FF00FF), no gradient, no ground, no ground shadows, no text.
+Each tree: a dense rounded bushy crown made of MANY small irregular soft lumps (like a broccoli / cauliflower cluster of 30-60 small puffs), soft matte clay-like shading, warm key light from the LEFT (bright yellow-green highlights on the upper left, deeper green on the lower right), a very short dark brown trunk barely visible under the crown.
+Cells 1-6: fresh lime / yellow-green crowns (#8fd24a highlights, #4f9a2e shadows), cell 1 round, cell 2 slightly wider, cell 3 small round, cell 4 slightly lopsided, cell 5 and 6 taller UPRIGHT crowns (about 1.2 times taller than wide, like a rounded column).
+Cells 7-8: the same style but a cherry-blossom PINK crown (#f08ab8 highlights, #b55a93 shadows), many small lumps, round.

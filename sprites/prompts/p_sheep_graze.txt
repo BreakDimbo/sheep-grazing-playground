@@ -1,0 +1,8 @@
+Use your built-in image generation tool (default settings) to create ONE image, then save/copy the resulting PNG to /workspace/sheep/gen/sheep_graze.png.
+
+The attached image is only a STYLE reference (do not copy it): soft, toy-like 3D-rendered cartoon sheep in a cozy miniature diorama.
+
+Image content: a sprite sheet of the SAME single sheep shown 8 times in a strict 4 columns x 2 rows grid, evenly spaced, each sheep centred in its cell, all the same size, nothing overlapping, generous gap between cells. Background: perfectly flat uniform pure magenta (#FF00FF) everywhere, no gradient, no floor, no shadows, no ground, no text, no grid lines.
+The sheep: very fluffy rounded body of soft cream-white cotton-like wool (big soft puffy lumps, slightly blurry soft edges, warm cream highlights, faint lavender-grey shading underneath), small dark charcoal-brown face and ears, short thin dark legs mostly hidden under the wool. Pose: GRAZING, head lowered down to the grass.
+Camera: every cell seen from the same elevated three-quarter view, looking down at about 30 degrees, orthographic-like. Warm soft key light from the LEFT in every cell (light direction fixed relative to the viewer).
+The 8 cells show the sheep turned in 8 headings, rotating 45 degrees each, in this order (left to right, top row then bottom row): facing left, facing front-left (toward viewer, left), facing the viewer, facing front-right, facing right, facing back-right (away, right), facing directly away (rear view), facing back-left.

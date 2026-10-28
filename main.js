@@ -31,6 +31,40 @@ const TEXW = MOBILE ? 1536 : 2048, TEXH = Math.round(TEXW * 1.27);
 const KU = TEXW / (1 + 2 * E), KV = TEXH / (1 + 2 * E);
 const SHEEP_SCALE = +(Q.get('ss') || 0.95);
 
+// ---------- painted sprites (generated art, see README) ----------
+const SPR = await (await fetch('sprites/meta.json')).json();
+const texLoader = new THREE.TextureLoader();
+async function loadTex(u){ const t = await texLoader.loadAsync(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; return t; }
+const [TEX_SHEEP, TEX_TREES, TEX_CLOUDS] = await Promise.all(['sheep', 'trees', 'clouds'].map(n => SPR[n] ? loadTex(`sprites/${n}.webp`) : null));
+const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform vec2 uCenter; uniform float uBias; varying vec2 vUv; varying vec2 vL;
+  void main(){ vUv = uRect.xy + uv * uRect.zw; vL = uv;
+    vec4 mv = modelViewMatrix * vec4(0., 0., 0., 1.); float k = 1. - uBias / length(mv.xyz); mv.xyz *= k;   // pulled toward the eye so the card never cuts into the ground
+    mv.xy += (uv - uCenter) * uSize * k; gl_Position = projectionMatrix * mv; }`;
+const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec4 uFade; varying vec2 vUv; varying vec2 vL;
+  float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)) + uSeed) * 43758.5453); }
+  float nn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + 1.), f.x), f.y); }
+  void main(){ vec4 c = texture2D(map, vUv); c.a *= uAlpha;
+    if (uReveal < 1.){ float n = nn(vL * 9.) * 0.65 + nn(vL * 23.) * 0.35; if (n * 0.75 + vL.x * 0.45 > uReveal * 1.2) discard; }
+    c.a *= clamp(uFade.x + uFade.y * vL.x + uFade.z * vL.y, uFade.w, 1.);
+    if (c.a < 0.02) discard;
+    c.rgb = mix(vec3(dot(c.rgb, vec3(.2126, .7152, .0722))), c.rgb, uSat);
+    gl_FragColor = vec4(c.rgb * uTint, c.a);
+    #include <colorspace_fragment>
+  }`;
+const BB_GEO = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
+function billboard(tex, rect, size, center, opts = {}){
+  const m = new THREE.ShaderMaterial({ vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: opts.depthWrite ?? true,
+    uniforms: { map: { value: tex }, uRect: { value: new THREE.Vector4(...rect) }, uSize: { value: new THREE.Vector2(...size) }, uCenter: { value: new THREE.Vector2(...center) },
+      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
+  const b = new THREE.Mesh(BB_GEO, m); b.frustumCulled = false; return b;
+}
+// atlas rect for (col,row) of a grid; v flipped for GL
+function atlasRect(cols, rows, c, r){ return [c / cols, 1 - (r + 1) / rows, 1 / cols, 1 / rows]; }
+const SHEEP_CELL_W = +(Q.get('sw') || 1.9);      // world size of one sheep atlas cell (per unit sheep scale)
+const SHEEP_TINT = new THREE.Color(1.0, 0.955, 1.03);
+const DIR_SQ = +(Q.get('dq') || 0.6);          // favour side views (sprites were painted from higher up than the board camera)
+
 // ---------- renderer / scene / camera ----------
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: CLEAN });
@@ -280,7 +314,8 @@ function tint(g, c){ const n = g.attributes.position.count, a = new Float32Array
 
 // ---------- trees: lumpy puffball crowns ----------
 const trees = [];
-function makeTree(px, py, wpx, kind){
+const TREE_K = +(Q.get('tk') || 1.0);
+function makeTree(px, py, wpx, kind, cell, tintC, tk = 1){
   const pink = kind === 'p';
   // crown is ~1 unit wide; centre height ~0.62 of the width (sits low, trunk hidden)
   const far = py < 300, cy = far ? 0.54 : 0.5;
@@ -294,12 +329,18 @@ function makeTree(px, py, wpx, kind){
     const r = pink ? R(0.1, 0.16) : R(0.13, 0.2); const c = dark.clone().lerp(base, clamp(0.35 + dir.y * 0.5 - dir.x * 0.2, 0, 1)).lerp(lite, rand() * 0.25);
     parts.push(tint(blob(r, 2, 0.15, R(0, 9)).translate(dir.x * rx * 0.86, cy + dir.y * ry * 0.86, dir.z * rx * 0.86), c)); }
   const crown = new THREE.Mesh(mergeGeos(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
-  crown.castShadow = true; crown.receiveShadow = true; grp.add(crown);
-  if (far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
+  crown.castShadow = true; crown.receiveShadow = false; crown.material = shadowOnly; grp.add(crown);
+  { const T = SPR.trees, c = T.cells[cell], cols = T.cols, rows = Math.ceil(T.cells.length / cols);
+    const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
+    const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
+    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], [0.5, ccy], { tint: tintC ?? 0xffffff, bias: size * 0.7, sat: pink ? 0.95 : 0.78 });
+    b.position.set(0, cy, 0); grp.add(b); }
+  if (false && far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
   grp.rotation.y = R(0, 6.28); scene.add(grp);
   trees.push({ grp, crown, x: p.x, z: p.z, r: size * 0.5, phase: R(0, 6) });
 }
-LAYOUT.treesPx.forEach(([x, y, w, k]) => makeTree(x, y, w, k));
+const TREE_CELLS = [0, 2, 3, 1, 6, 2, 1], TREE_SCALE = [1, 1, 1, 1, 1, 1, 1.18], TREE_TINT = [0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xeac4e6, 0xd8e4c8, 0xd8e4c8];
+LAYOUT.treesPx.forEach(([x, y, w, k], i) => makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i]));
 
 // ---------- clouds (placed on the rays of the reference pixels) ----------
 const clouds = [];
@@ -318,7 +359,11 @@ function makeCloud(p, s){
   const pre = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ colorWrite: false })); pre.renderOrder = 2; m.renderOrder = 3; m.add(pre);
   m.position.copy(p); m.scale.set(s, s * 1.2, s * 0.8); scene.add(m); clouds.push({ m, p: p.clone(), ph: R(0, 6) });
 }
-for (const [x, y, w] of LAYOUT.cloudsPx){ const p = rayAtPixel(x, y + w * 0.12, -12.8); makeCloud(p, w * p.distanceTo(refCam.position) / FPX / 4.4); }
+const CLOUD_LOOK = [[0, 1.0, 0.92], [2, 1.0, 0.8]];       // atlas cell, x stretch, opacity
+LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07, y + w * 0.05, -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX;
+  const [cell, sx, al] = CLOUD_LOOK[i] || CLOUD_LOOK[0], C = SPR.clouds, c = C.cells[cell], cs = ww / (c.w * sx);
+  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: al, fade: i ? [1, 0, 0, 1] : [0.55, 0.75, -0.55, 0.12] });
+  m.position.copy(p); m.renderOrder = 3; scene.add(m); clouds.push({ m, p: p.clone(), ph: 0 }); });
 
 // ---------- sheep ----------
 const woolMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x3c2e1e });
@@ -358,7 +403,7 @@ function dissolveMat(base){
 }
 
 const sheep = [];
-const TMPV = new THREE.Vector3();
+const TMPV = new THREE.Vector3(), TMPV2 = new THREE.Vector3();
 class Sheep {
   constructor(x, z, opts = {}){
     this.root = new THREE.Group(); this.body = new THREE.Group(); this.root.add(this.body);
@@ -373,7 +418,8 @@ class Sheep {
     const tuft = new THREE.Mesh(tint(blob(0.11, 2, 0.25, 3), new THREE.Color(0xf6f1e8)), woolMat); tuft.position.set(0.05, 0.13, 0); this.neck.add(tuft); this.meshes.push(tuft);
     this.legs = [];
     for (const [lx, lz] of [[0.36, 0.2], [0.36, -0.2], [-0.36, 0.2], [-0.36, -0.2]]){ const l = new THREE.Mesh(legGeo, faceMat); l.position.set(lx * 1.2, 0.38, lz * 0.9); this.body.add(l); this.legs.push(l); this.meshes.push(l); }
-    for (const m of this.meshes){ m.castShadow = true; m.receiveShadow = m === wool; }
+    for (const m of this.meshes){ m.castShadow = true; m.receiveShadow = false; m.material = shadowOnly; }   // 3D rig only casts the shadow; the look is the painted sprite
+    this.spr = billboard(TEX_SHEEP, atlasRect(8, 4, 0, 0), [1, 1], [0.5, 6 / 256], { bias: 0.9, tint: SHEEP_TINT }); this.root.add(this.spr); this.frame = -1;
     this.hit = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.25, 1.2).translate(0.15, 0.62, 0), new THREE.MeshBasicMaterial({ visible: false })); this.root.add(this.hit); this.hit.userData.sheep = this;
     this.root.position.set(x, 0, z);
     this.heading = opts.heading ?? R(-Math.PI, Math.PI); this.root.rotation.y = this.heading; this.targetHeading = this.heading;
@@ -386,11 +432,7 @@ class Sheep {
     scene.add(this.root); sheep.push(this);
   }
   materialise(dir){
-    this.reveal = 0; this.saved = this.meshes.map(m => m.material);
-    const cache = new Map(); this.dmats = [];
-    this.meshes.forEach(m => { if (!cache.has(m.material)){ const dm = dissolveMat(m.material); cache.set(m.material, dm); this.dmats.push(dm); } m.material = cache.get(m.material); m.castShadow = false; });
-    const d = dir || new THREE.Vector3(R(-1, 1), 0.3, R(-1, 1)); d.normalize();
-    this.dmats.forEach(dm => { dm.userData.u.uDir.value.copy(d); });
+    this.reveal = 0; this.meshes.forEach(m => m.castShadow = false); this.spr.material.uniforms.uReveal.value = 0;
   }
   get x(){ return this.root.position.x; } get z(){ return this.root.position.z; }
   get sc(){ return this.size * SHEEP_SCALE; }
@@ -429,12 +471,10 @@ class Sheep {
     } else if (this.lock && this.t < 0){ this.t = R(3, 7); }
   }
   update(dt, time){
-    if (this.dying){ this.alive = (this.alive ?? 1) - dt * 4; this.root.scale.setScalar(Math.max(0.001, this.alive) * this.sc); if (this.alive <= 0){ scene.remove(this.root); sheep.splice(sheep.indexOf(this), 1); } return; }
+    if (this.dying){ this.alive = (this.alive ?? 1) - dt * 4; this.root.scale.setScalar(Math.max(0.001, this.alive) * this.sc); this.pickFrame(); if (this.alive <= 0){ scene.remove(this.root); sheep.splice(sheep.indexOf(this), 1); } return; }
     if (this.reveal < 1){
-      this.reveal = Math.min(1, this.reveal + dt / 0.75);
-      for (const dm of this.dmats){ dm.userData.u.uReveal.value = this.reveal; dm.userData.u.uC.value.set(this.x, 0.75 * this.sc, this.z); }
+      this.reveal = Math.min(1, this.reveal + dt / 0.75); this.spr.material.uniforms.uReveal.value = this.reveal;
       if (this.reveal > 0.72) this.meshes.forEach(m => m.castShadow = true);
-      if (this.reveal >= 1){ this.meshes.forEach((m, i) => m.material = this.saved[i]); this.dmats.forEach(d => d.dispose()); this.dmats = null; }
     }
     if (dt === 0){ this.pose(0, time, false); return; }
     if (this.reveal < 0.9){ this.pose(dt, time, false); return; }
@@ -508,6 +548,22 @@ class Sheep {
     this.ear1.rotation.x = 0.5 + Math.sin(time * 3 + this.phase) * 0.05; this['ear-1'].rotation.x = -0.5 - Math.sin(time * 2.6 + this.phase) * 0.05;
     this.root.rotation.y = this.heading;
     this.phase += dt;
+    this.pickFrame();
+  }
+  pickFrame(){
+    // which painted view: heading relative to the camera, 8 directions
+    const f = this.fwd(); camera.getWorldDirection(TMPV2); TMPV2.y = 0; TMPV2.normalize();
+    const sz = f.x * TMPV2.x + f.z * TMPV2.z, sx = f.x * -TMPV2.z + f.z * TMPV2.x;     // away-from-camera, screen-right
+    const th = Math.atan2(-sz * DIR_SQ, sx); const col = ((Math.round((Math.PI - th) / (Math.PI / 4)) % 8) + 8) % 8;
+    let row = 1;
+    if (this.y > 0.04 || this.vy > 0) row = 3;
+    else if (this.speed > 0.2) row = Math.sin(this.gait * 2) > 0 ? 2 : 1;
+    else if ((this.crouch ?? 0) > 0.5) row = 0;
+    const id = row * 8 + col;
+    const u = this.spr.material.uniforms;
+    if (id !== this.frame){ this.frame = id; u.uRect.value.set(...atlasRect(8, 4, col, row)); }
+    const k = SHEEP_CELL_W * this.root.scale.x; u.uSize.value.set(k, k);
+    this.spr.position.y = this.y / this.root.scale.x - Math.sin(this.squash * Math.PI) * 0.06;
   }
 }
 function angDiff(a, b){ let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }

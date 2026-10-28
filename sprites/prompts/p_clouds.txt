@@ -1,0 +1,7 @@
+Use your built-in image generation tool (default settings) to create ONE image, then copy the resulting PNG to /workspace/sheep/gen/clouds.png. Do not edit it.
+
+The attached image is only a STYLE reference (do not copy it): a soft stylised 3D cartoon cumulus cloud floating over a miniature diorama.
+
+Image content: 4 separate clouds in a 2 columns x 2 rows grid, evenly spaced, nothing overlapping, on a perfectly flat uniform pure black (#000000) background, no text.
+Cell 1 and 2: a soft puffy cumulus cloud, wider than tall, built of many soft lumpy puffs, very soft fuzzy edges, top and left sides warm cream-white (#f6eee4) gently fading, the lower right side and the bottom lumps shaded soft lavender-violet (#b7a8e0), lit by warm light from the left.
+Cell 3 and 4: a tiny faint wispy cloud puff, mostly transparent-looking, pale lavender-white, very soft and blurry.
