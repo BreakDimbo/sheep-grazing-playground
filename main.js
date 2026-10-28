@@ -132,7 +132,7 @@ function paintGround(){
   hedges.forEach(h => { smoothPath(g, h); g.stroke(); }); g.restore();
   g.filter = `blur(${4 * s}px)`; g.strokeStyle = 'rgba(52,100,30,.35)'; g.lineWidth = 22 * s;
   hedges.forEach(h => { smoothPath(g, h); g.stroke(); });
-  g.filter = `blur(${1.6 * s}px)`; g.strokeStyle = COL.hedge; g.lineWidth = 14 * s;
+  g.filter = `blur(${1.6 * s}px)`; g.strokeStyle = COL.hedge; g.lineWidth = 17 * s;
   hedges.forEach(h => { smoothPath(g, h); g.stroke(); });
   g.filter = 'none';
   hedges.forEach(h => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.hypot(x1 - x0, y1 - y0) / (3 * s);
@@ -282,10 +282,11 @@ const trees = [];
 function makeTree(px, py, wpx, kind){
   const pink = kind === 'p';
   // crown is ~1 unit wide; centre height ~0.62 of the width (sits low, trunk hidden)
-  const { p, size } = placeByPixel(px, py, wpx * 0.96, sz => sz * 0.5);
+  const far = py < 300, cy = far ? 0.54 : 0.5;
+  const { p, size } = placeByPixel(px, py, wpx * 0.96, sz => sz * cy);
   const grp = new THREE.Group(); grp.position.set(p.x, 0, p.z); grp.scale.setScalar(size);
   const base = new THREE.Color(pink ? 0xf092b2 : 0x80cc46), dark = new THREE.Color(pink ? 0xcc7299 : 0x58a837), lite = new THREE.Color(pink ? 0xf9b4c6 : 0xb2e468);
-  const parts = []; const cy = 0.5, rx = 0.42, ry = 0.41;
+  const parts = []; const rx = 0.42, ry = 0.41;
   parts.push(tint(blob(0.4, 3, 0.1, R(0, 9)).scale(1, ry / 0.42, 1).translate(0, cy, 0), dark));
   const n = pink ? 46 : 34;
   for (let i = 0; i < n; i++){ const th = R(0, 6.283), ph = Math.acos(R(-0.55, 1)); const dir = new THREE.Vector3(Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th));
@@ -293,7 +294,7 @@ function makeTree(px, py, wpx, kind){
     parts.push(tint(blob(r, 2, 0.15, R(0, 9)).translate(dir.x * rx * 0.86, cy + dir.y * ry * 0.86, dir.z * rx * 0.86), c)); }
   const crown = new THREE.Mesh(mergeGeos(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
   crown.castShadow = true; crown.receiveShadow = true; grp.add(crown);
-  if (false){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x5b3a22 })); trunk.castShadow = true; grp.add(trunk); }
+  if (far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
   grp.rotation.y = R(0, 6.28); scene.add(grp);
   trees.push({ grp, crown, x: p.x, z: p.z, r: size * 0.5, phase: R(0, 6) });
 }
@@ -319,14 +320,14 @@ function makeCloud(p, s){
 for (const [x, y, w] of LAYOUT.cloudsPx){ const p = rayAtPixel(x, y + w * 0.12, -12.8); makeCloud(p, w * p.distanceTo(refCam.position) / FPX / 4.4); }
 
 // ---------- sheep ----------
-const woolMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x30271e });
+const woolMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x3c2e1e });
 const faceMat = new THREE.MeshLambertMaterial({ color: 0x2a1e1c });
 const earMat = new THREE.MeshLambertMaterial({ color: 0x2f2420 });
 const pinkMat = new THREE.MeshLambertMaterial({ color: 0xd9978f });
 const legGeo = new THREE.CylinderGeometry(0.045, 0.04, 0.38, 6).translate(0, -0.19, 0);
 const BODY_Y = 0.74, BL = 0.76, BH = 0.45, BW = 0.46;       // wool ellipsoid half-sizes (length, height, width)
 const WOOL_VARIANTS = [0, 1, 2, 3].map(seed => {
-  const parts = []; const cream = new THREE.Color(0xfff9ef), shade = new THREE.Color(0xe9dbd2);
+  const parts = []; const cream = new THREE.Color(0xfff6e6), shade = new THREE.Color(0xf0dcc6);
   const core = blob(1, 3, 0.05, seed).scale(BL * 0.94, BH * 0.94, BW * 0.94).translate(0, BODY_Y, 0); parts.push(tint(core, shade));
   const rr = mulberry(100 + seed);
   for (let i = 0; i < 96; i++){
