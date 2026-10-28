@@ -231,13 +231,16 @@ function paintGround(){
   const dg = new Float32Array(FW * FH); for (let i = 0; i < fl.length; i += 3) dg[fl[i+1] * FW + fl[i]] = fl[i+2] / 100;
   const dgs = new Float32Array(FW * FH), RR = +(Q.get('fr') ?? 4);                 // box-blur the measured density so dots sprinkle evenly
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){ let t = 0, c = 0; for (let j = -RR; j <= RR; j++) for (let i = -RR; i <= RR; i++){ const xx = x + i, yy = y + j; if (xx < 0 || yy < 0 || xx >= FW || yy >= FH) continue; t += dg[yy * FW + xx]; c++; } dgs[y * FW + x] = t / c; }
-  const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 1.2), FWH = +(Q.get('fw') ?? 0.015), FWT = +(Q.get('fwt') ?? 0), FOR = +(Q.get('fo') ?? 0.1), FYC = '#' + (Q.get('fy') || 'd9c455'), FOC = '#' + (Q.get('fc') || 'e3a24a');
+  const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 1.2), FWH = +(Q.get('fw') ?? 0.015), FWT = +(Q.get('fwt') ?? 0), FOR = +(Q.get('fo') ?? 0.05), FYC = '#' + (Q.get('fy') || 'd9c455'), FOC = '#' + (Q.get('fc') || 'e3a24a');
+  const FLB = +(Q.get('flb') ?? 1), fBr = P(LAYOUT.bright), fDk = P(LAYOUT.dark);   // extra flower density in the light (background) field
+  const frand = mulberry(+(Q.get('fseed') ?? 31));                                  // own PRNG: flower tweaks must not reshuffle the rest of the board
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){
-    const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64 * FD; let n = Math.floor(dens); if (rand() < dens - n) n++;
+    const cx = (x + .5) * cellW, cy = (y + .5) * cellH, lit = FLB !== 1 && !inPoly(cx, cy, fBr) && !inPoly(cx, cy, fDk) && !inPoly(cx, cy, wheat);
+    const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64 * FD * (lit ? FLB : 1); let n = Math.floor(dens); if (frand() < dens - n) n++;
     for (let k = 0; k < n; k++){
-      const px = (x + rand()) * cellW, py = (y + rand()) * cellH; if (inPoly(px, py, wheat) && (FWT <= 0 || rand() > FWT)) continue;
-      const t = rand(); g.fillStyle = t < 1 - FWH - FOR ? FYC : t < 1 - FWH ? FOC : '#fbf3df';
-      g.beginPath(); g.arc(px, py, R(1.1, 2.5) * s * +(Q.get('fs') || 1.6), 0, 7); g.fill();
+      const px = (x + frand()) * cellW, py = (y + frand()) * cellH; if (inPoly(px, py, wheat) && (FWT <= 0 || frand() > FWT)) continue;
+      const t = frand(); g.fillStyle = t < 1 - FWH - FOR ? FYC : t < 1 - FWH ? FOC : '#fbf3df';
+      g.beginPath(); g.arc(px, py, (1.1 + 1.4 * frand()) * s * +(Q.get('fs') || 1.6), 0, 7); g.fill();
     }
   }
   // river: thin sandy banks, light edges, deep middle
