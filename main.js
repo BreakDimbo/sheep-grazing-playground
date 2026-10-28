@@ -172,13 +172,14 @@ function paintGround(){
   // ragged paper edge -> alpha (block-dithered, used with alphaTest), with a pale wash toward the rim
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s));
-  const wash = [166, 204, 104];
+  const wash = [166, 204, 104], CR = 2.6;
   for (let y = 0; y < TEXH; y++){
     const v = y / KV - E;
     for (let x = 0; x < TEXW; x++){
       const u = x / KU - E;
       const eu = Math.min(u, 1 - u) * W, ev = Math.min(v, 1 - v) * D;     // metres from the nominal edge
-      const e = Math.min(eu, ev);
+      let e = Math.min(eu, ev);
+      if (u > 0.5 && v > 0.5 && eu < CR && ev < CR) e = Math.min(e, CR - Math.hypot(CR - eu, CR - ev));   // the reference's worn bottom-right corner
       if (e > 1.6) continue;
       const i = (y * TEXW + x) * 4;
       const n = fbm(x * 0.012 / s, y * 0.012 / s) - 0.5, n2 = vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5;
