@@ -134,7 +134,7 @@ const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0,
 
 // ---------- ground painting ----------
 const EF = (k, t) => { const c = LAYOUT.edgeFit && LAYOUT.edgeFit[k]; if (!c) return 0; let r = 0; for (let i = c.length - 1; i >= 0; i--) r = r * t + c[i]; return r; };
-const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') ?? 0.02);
+const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') ?? -0.12);
 const river = LAYOUT.river, pathL = LAYOUT.path;
 function paintGround(){
   const cv = document.createElement('canvas'); cv.width = TEXW; cv.height = TEXH;
@@ -246,7 +246,7 @@ function paintGround(){
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s * +(Q.get('eb') || 1)));
   const wash = [166, 204, 104], CR = 2.6;
-  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 1), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.0), FP = +(Q.get('fp') ?? 1.6), FB = +(Q.get('fb') ?? 3), FT = +(Q.get('ft') ?? 0.3), FA = +(Q.get('fa') ?? 2), WF = +(Q.get('wf') ?? 0.3);
+  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 5), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.5), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.3), A0 = +(Q.get('a0') ?? -0.05);
   for (let y = 0; y < TEXH; y++){
     const v = y / KV - E;
     for (let x = 0; x < TEXW; x++){
@@ -263,13 +263,13 @@ function paintGround(){
       if (SOFT){
         const kk = k + (vnoise(x * 0.35 / s, y * 0.35 / s) - 0.5) * SG;          // dry-brush grain
         const t = clamp(kk, 0, 1), sm = Math.pow(t * t * (3 - 2 * t), SP);
-        a = kk > -0.05 ? 1 : 0;
+        a = kk > A0 ? 1 : 0;
         if (!a && kk > -FK){                                                   // dry-brush flecks beyond the wash
           const fb = Math.max(1, Math.round(FB * s)), hx = Math.floor(x / fb), hy = Math.floor(y / (fb * FA));
           const pr = Math.pow(1 + kk / FK, 2.2) * FP * (0.4 + vnoise(x * 0.05 / s, y * 0.05 / s) * 1.2);
-          if (hash2(hx + 7, hy + 3) < pr){ a = 1; const tf = FT + hash2(hx, hy + 11) * 0.3; d[i] = lerp(PC[0], d[i], tf); d[i + 1] = lerp(PC[1], d[i + 1], tf); d[i + 2] = lerp(PC[2], d[i + 2], tf); }
+          if (hash2(hx + 7, hy + 3) < pr){ a = 1; const tf = FT + hash2(hx, hy + 11) * FV; d[i] = lerp(PC[0], d[i], tf); d[i + 1] = lerp(PC[1], d[i + 1], tf); d[i + 2] = lerp(PC[2], d[i + 2], tf); }
         }
-        if (a && sm < 1){ d[i] = lerp(PC[0], d[i], sm); d[i + 1] = lerp(PC[1], d[i + 1], sm); d[i + 2] = lerp(PC[2], d[i + 2], sm); }
+        if (a && sm < 1){ const sf = kk >= A0 ? EF0 + (1 - EF0) * sm : FLK; d[i] = lerp(PC[0], d[i], sf); d[i + 1] = lerp(PC[1], d[i + 1], sf); d[i + 2] = lerp(PC[2], d[i + 2], sf); }
       } else if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
       d[i + 3] = a ? 255 : 0;
       const f = clamp(1 - (ee - 0.05) / 0.9, 0, 1) * WF;
