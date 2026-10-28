@@ -245,13 +245,16 @@ function paintGround(){
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){ let t = 0, c = 0; for (let j = -RR; j <= RR; j++) for (let i = -RR; i <= RR; i++){ const xx = x + i, yy = y + j; if (xx < 0 || yy < 0 || xx >= FW || yy >= FH) continue; t += dg[yy * FW + xx]; c++; } dgs[y * FW + x] = t / c; }
   const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 1.2), FWH = +(Q.get('fw') ?? 0.015), FWT = +(Q.get('fwt') ?? 0), FOR = +(Q.get('fo') ?? 0.05), FYC = '#' + (Q.get('fy') || 'd9c455'), FOC = '#' + (Q.get('fc') || 'e3a24a');
   const FLB = +(Q.get('flb') ?? 1), fBr = P(LAYOUT.bright), fDk = P(LAYOUT.dark);   // extra flower density in the light (background) field
+  const FMU = Q.has('nofmul') ? null : LAYOUT.flowerMul;                                // local density multiplier fitted to the ref dot counts (flfit.py)
+  const FAD = Q.has('nofadd') ? null : LAYOUT.flowerAdd, FAG = +(Q.get('fag') ?? 1.5), FAWH = +(Q.get('faw') ?? 0.35);   // extra dots where the ref has a cluster we lack (flfit.py)
   const frand = mulberry(+(Q.get('fseed') ?? 31));                                  // own PRNG: flower tweaks must not reshuffle the rest of the board
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){
     const cx = (x + .5) * cellW, cy = (y + .5) * cellH, lit = FLB !== 1 && !inPoly(cx, cy, fBr) && !inPoly(cx, cy, fDk) && !inPoly(cx, cy, wheat);
-    const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64 * FD * (lit ? FLB : 1); let n = Math.floor(dens); if (frand() < dens - n) n++;
-    for (let k = 0; k < n; k++){
+    const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64 * FD * (lit ? FLB : 1) * (FMU ? FMU[Math.min(39, (y / FH * 40) | 0) * 32 + Math.min(31, (x / FW * 32) | 0)] : 1); let n = Math.floor(dens); if (frand() < dens - n) n++;
+    const ad = FAD ? FAD[Math.min(39, (y / FH * 40) | 0) * 32 + Math.min(31, (x / FW * 32) | 0)] * FAG * 1024 / (FW * FH) : 0; let na = Math.floor(ad); if (frand() < ad - na) na++;
+    for (let k = 0; k < n + na; k++){
       const px = (x + frand()) * cellW, py = (y + frand()) * cellH; if (inPoly(px, py, wheat) && (FWT <= 0 || frand() > FWT)) continue;
-      const t = frand(); g.fillStyle = t < 1 - FWH - FOR ? FYC : t < 1 - FWH ? FOC : '#fbf3df';
+      const wh = k < n ? FWH : FAWH, t = frand(); g.fillStyle = t < 1 - wh - FOR ? FYC : t < 1 - wh ? FOC : '#fbf3df';
       g.beginPath(); g.arc(px, py, (1.1 + 1.4 * frand()) * s * +(Q.get('fs') || 1.6), 0, 7); g.fill();
     }
   }
