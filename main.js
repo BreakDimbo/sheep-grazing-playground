@@ -168,14 +168,14 @@ function paintGround(){
   }
   { g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); paintTile(g, IMG_GRASS, s, TILE_A); g.restore(); }
   // hedgerows: soft dark bands
-  const hedges = LAYOUT.hedges.map(P);
+  const hedges = LAYOUT.hedges.map(P); const HW = i => (LAYOUT.hedgeW ? LAYOUT.hedgeW[i] : 1) * +(Q.get('hw') || 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
-  g.save(); g.translate(7 * s, 3 * s); g.filter = `blur(${7 * s}px)`; g.strokeStyle = 'rgba(40,85,25,.22)'; g.lineWidth = 34 * s;
-  hedges.forEach(h => { smoothPath(g, h); g.stroke(); }); g.restore();
-  g.filter = `blur(${4 * s}px)`; g.strokeStyle = 'rgba(52,100,30,.35)'; g.lineWidth = 29 * s;
-  hedges.forEach(h => { smoothPath(g, h); g.stroke(); });
-  g.filter = `blur(${1.6 * s}px)`; g.strokeStyle = COL.hedge; g.lineWidth = 22 * s;
-  hedges.forEach(h => { smoothPath(g, h); g.stroke(); });
+  g.save(); g.translate(7 * s, 3 * s); g.filter = `blur(${7 * s}px)`; g.strokeStyle = 'rgba(40,85,25,.22)'; 
+  hedges.forEach((h, i) => { g.lineWidth = 34 * s * HW(i); smoothPath(g, h); g.stroke(); }); g.restore();
+  g.filter = `blur(${4 * s}px)`; g.strokeStyle = 'rgba(52,100,30,.35)'; 
+  hedges.forEach((h, i) => { g.lineWidth = 29 * s * HW(i); smoothPath(g, h); g.stroke(); });
+  g.filter = `blur(${1.6 * s}px)`; g.strokeStyle = COL.hedge; 
+  hedges.forEach((h, i) => { g.lineWidth = 22 * s * HW(i); smoothPath(g, h); g.stroke(); });
   g.filter = 'none';
   hedges.forEach(h => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.hypot(x1 - x0, y1 - y0) / (3 * s);
     for (let j = 0; j < n; j++){ const t = rand(); g.fillStyle = rand() < .5 ? 'rgba(35,80,20,.28)' : 'rgba(95,150,55,.22)'; g.beginPath(); g.arc(lerp(x0, x1, t) + R(-7, 7) * s, lerp(y0, y1, t) + R(-7, 7) * s, R(1, 2.2) * s, 0, 7); g.fill(); } } });
