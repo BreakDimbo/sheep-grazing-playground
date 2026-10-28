@@ -209,7 +209,7 @@ function paintGround(){
   // flowers, placed with the density measured from the reference
   const [FW, FH] = LAYOUT.flowerGrid, fl = LAYOUT.flowers;
   const dg = new Float32Array(FW * FH); for (let i = 0; i < fl.length; i += 3) dg[fl[i+1] * FW + fl[i]] = fl[i+2] / 100;
-  const dgs = new Float32Array(FW * FH), RR = 3;                 // box-blur the measured density so dots sprinkle evenly
+  const dgs = new Float32Array(FW * FH), RR = +(Q.get('fr') ?? 7);                 // box-blur the measured density so dots sprinkle evenly
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){ let t = 0, c = 0; for (let j = -RR; j <= RR; j++) for (let i = -RR; i <= RR; i++){ const xx = x + i, yy = y + j; if (xx < 0 || yy < 0 || xx >= FW || yy >= FH) continue; t += dg[yy * FW + xx]; c++; } dgs[y * FW + x] = t / c; }
   const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 1), FWH = +(Q.get('fw') ?? 0.05);
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){
