@@ -162,14 +162,19 @@ function paintGround(){
   paintTile(g, IMG_WHEAT, s, TILE_A);
   g.restore();
   // grass: fine short vertical ticks
-  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.5), GM = +(Q.get("gm") ?? 0.6), GL = +(Q.get("gl") ?? 0.6), GWD = +(Q.get("gw") ?? 1);
+  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.2), GM = +(Q.get("gm") ?? 0), GL = +(Q.get("gl") ?? 0.6), GWD = +(Q.get("gw") ?? 0.8), GK = +(Q.get("gk") ?? 1.8), GDK = +(Q.get("gdk") ?? 0.5);
   for (let i = 0; i < N; i++){
     const x = R(0, TEXW), y = R(0, TEXH);
     const l = R(3, 8) * s, t = rand();
-    g.strokeStyle = t < 0.45 ? `rgba(55,115,25,${R(.07,.16).toFixed(3)})` : t < 0.9 ? `rgba(215,240,140,${R(.07,.17).toFixed(3)})` : `rgba(40,90,20,${R(.1,.18).toFixed(3)})`;
+    g.strokeStyle = t < GDK ? `rgba(55,115,25,${(R(.07,.16) * GK).toFixed(3)})` : t < 0.9 ? `rgba(215,240,140,${(R(.07,.17) * GK).toFixed(3)})` : `rgba(40,90,20,${(R(.1,.18) * GK).toFixed(3)})`;
     g.lineWidth = R(0.9, 1.6) * s * GWD; g.beginPath(); g.moveTo(x, y); if (GM){ const a = R(-GM, GM); g.lineTo(x + Math.cos(a) * l * GL, y + Math.sin(a) * l * GL); } else g.lineTo(x + R(-1, 1) * s, y - l); g.stroke();
   }
   { g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); paintTile(g, IMG_GRASS, s, TILE_A); g.restore(); }
+  { const NP = (MOBILE ? 6000 : 11000) * s * s * +(Q.get('gp') ?? 0.12), GPR = +(Q.get('gpr') ?? 1.6), GPA = +(Q.get('gpa') ?? 1.2); if (NP > 0){
+    const pc = document.createElement('canvas'); pc.width = TEXW; pc.height = TEXH; const p = pc.getContext('2d');
+    for (let i = 0; i < NP; i++){ const x = R(0, TEXW), y = R(0, TEXH); p.fillStyle = `rgba(205,238,150,${(R(.12, .3) * GPA).toFixed(3)})`; p.beginPath(); p.ellipse(x, y, R(1.4, 2.6) * s * GPR, R(2.2, 3.8) * s * GPR, 0, 0, 7); p.fill(); }
+    g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); g.filter = `blur(${0.8 * s}px)`; g.drawImage(pc, 0, 0); g.filter = 'none'; g.restore(); } }
+
   // fitted low-frequency colour correction per field (quadratic in board uv; see fieldfit.py)
   if (LAYOUT.fieldFix && !Q.has('nofix')){
     const F = LAYOUT.fieldFix, q = 4, mw = Math.ceil(TEXW / q), mh = Math.ceil(TEXH / q);
