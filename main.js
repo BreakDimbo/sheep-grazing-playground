@@ -196,7 +196,7 @@ function paintGround(){
     for (let k = 0; k < n; k++){
       const px = (x + rand()) * cellW, py = (y + rand()) * cellH; if (inPoly(px, py, wheat)) continue;
       const t = rand(); g.fillStyle = t < 0.45 ? '#f3c544' : t < 0.75 ? '#ec9535' : '#fbf3df';
-      g.beginPath(); g.arc(px, py, R(1.3, 2.1) * s, 0, 7); g.fill();
+      g.beginPath(); g.arc(px, py, R(1.3, 2.1) * s * +(Q.get('fs') || 1), 0, 7); g.fill();
     }
   }
   // river: thin sandy banks, light edges, deep middle
@@ -204,9 +204,10 @@ function paintGround(){
   g.filter = `blur(${1.5 * s}px)`;
   g.strokeStyle = COL.bank; g.lineWidth = rw * 1.24; smoothPath(g, rv); g.stroke();
   g.strokeStyle = COL.waterEdge; g.lineWidth = rw * 1.02; smoothPath(g, rv); g.stroke();
-  g.filter = `blur(${rw * 0.12}px)`;
-  g.strokeStyle = '#4f84bb'; g.lineWidth = rw * 0.78; smoothPath(g, rv); g.stroke();
-  g.strokeStyle = COL.waterDeep; g.lineWidth = rw * 0.48; smoothPath(g, rv); g.stroke();
+  const RB = +(Q.get('rb') || 0.12), RD = +(Q.get('rd') || 0.48), RM = +(Q.get('rm') || 0.78);
+  g.filter = `blur(${rw * RB}px)`;
+  g.strokeStyle = '#4f84bb'; g.lineWidth = rw * RM; smoothPath(g, rv); g.stroke();
+  g.strokeStyle = COL.waterDeep; g.lineWidth = rw * RD; smoothPath(g, rv); g.stroke();
   g.filter = 'none';
   // path re-cover (flowers), keep crisp
   g.filter = `blur(${2 * s}px)`; g.strokeStyle = 'rgba(227,201,147,.85)'; g.lineWidth = pw * 0.75; smoothPath(g, path); g.stroke(); g.filter = 'none';
