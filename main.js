@@ -67,7 +67,7 @@ function billboard(tex, rect, size, center, opts = {}){
 // atlas rect for (col,row) of a grid; v flipped for GL
 function atlasRect(cols, rows, c, r){ return [c / cols, 1 - (r + 1) / rows, 1 / cols, 1 / rows]; }
 const SHEEP_CELL_W = +(Q.get('sw') || 1.9);      // world size of one sheep atlas cell (per unit sheep scale)
-const SHEEP_TINT = new THREE.Color(1.0, 0.955, 1.03);
+const SHEEP_TINT = new THREE.Color(...(Q.get('st') || '0.95,0.88,1.0').split(',').map(Number));
 const DIR_SQ = +(Q.get('dq') || 0.6);          // favour side views (sprites were painted from higher up than the board camera)
 
 // ---------- renderer / scene / camera ----------
