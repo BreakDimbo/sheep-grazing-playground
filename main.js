@@ -36,6 +36,11 @@ const SPR = await (await fetch('sprites/meta.json')).json();
 const texLoader = new THREE.TextureLoader();
 async function loadTex(u){ const t = await texLoader.loadAsync(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; return t; }
 const [TEX_SHEEP, TEX_TREES, TEX_CLOUDS] = await Promise.all(['sheep', 'trees', 'clouds'].map(n => SPR[n] ? loadTex(`sprites/${n}.webp`) : null));
+const loadImg = async u => { try { const r = await fetch(u); if (!r.ok) return null; return await createImageBitmap(await r.blob()); } catch (e) { return null; } };
+const [IMG_GRASS, IMG_WHEAT] = Q.has('notile') ? [null, null] : await Promise.all(['grass', 'wheat'].map(n => loadImg(`sprites/${n}.webp`)));
+const TILE_A = +(Q.get('ga') || 0), TILE_S = +(Q.get('ts') || 0.5);
+function paintTile(g, img, s, alpha){ if (!img) return; g.save(); g.globalCompositeOperation = 'overlay'; g.globalAlpha = alpha;
+  const pt = g.createPattern(img, 'repeat'); pt.setTransform(new DOMMatrix().scale(TILE_S * s)); g.fillStyle = pt; g.fillRect(0, 0, TEXW, TEXH); g.restore(); }
 const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
 const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform vec2 uCenter; uniform float uBias; varying vec2 vUv; varying vec2 vL;
   void main(){ vUv = uRect.xy + uv * uRect.zw; vL = uv;
@@ -127,6 +132,7 @@ const fbm = (x, y) => vnoise(x, y) * 0.55 + vnoise(x * 2.1, y * 2.1) * 0.28 + vn
 const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
 // ---------- ground painting ----------
+const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') || 0.1);
 const river = LAYOUT.river, pathL = LAYOUT.path;
 function paintGround(){
   const cv = document.createElement('canvas'); cv.width = TEXW; cv.height = TEXH;
@@ -150,15 +156,17 @@ function paintGround(){
   for (let i = 0; i < 26000 * s * s; i++){ const x = R(TEXW * 0.4, TEXW), y = R(TEXH * 0.6, TEXH); const l = R(5, 11) * s;
     g.strokeStyle = rand() < 0.5 ? 'rgba(160,130,45,.22)' : 'rgba(240,222,130,.3)'; g.lineWidth = R(1, 1.8) * s;
     g.beginPath(); g.moveTo(x, y); g.lineTo(x + R(-1.5, 1.5) * s, y - l); g.stroke(); }
+  paintTile(g, IMG_WHEAT, s, TILE_A);
   g.restore();
   // grass: fine short vertical ticks
-  const N = (MOBILE ? 120000 : 220000) * s * s;
+  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.5);
   for (let i = 0; i < N; i++){
     const x = R(0, TEXW), y = R(0, TEXH);
     const l = R(3, 8) * s, t = rand();
     g.strokeStyle = t < 0.45 ? `rgba(55,115,25,${R(.07,.16).toFixed(3)})` : t < 0.9 ? `rgba(215,240,140,${R(.07,.17).toFixed(3)})` : `rgba(40,90,20,${R(.1,.18).toFixed(3)})`;
     g.lineWidth = R(0.9, 1.6) * s; g.beginPath(); g.moveTo(x, y); g.lineTo(x + R(-1, 1) * s, y - l); g.stroke();
   }
+  { g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); paintTile(g, IMG_GRASS, s, TILE_A); g.restore(); }
   // hedgerows: soft dark bands
   const hedges = LAYOUT.hedges.map(P);
   g.lineCap = 'round'; g.lineJoin = 'round';
@@ -218,7 +226,7 @@ function paintGround(){
       const i = (y * TEXW + x) * 4;
       const n = fbm(x * 0.012 / s, y * 0.012 / s) - 0.5, n2 = vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5;
       const ee = e + n * 0.55 + n2 * 0.12;                                  // jittered edge distance
-      const k = (ee + 0.1) / 0.45;                                        // 0 = fully paper, 1 = fully paint
+      const k = (ee + EDGE_O) / EDGE_W;                                        // 0 = fully paper, 1 = fully paint
       let a;
       if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
       d[i + 3] = a ? 255 : 0;
