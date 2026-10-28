@@ -145,6 +145,7 @@ function paintGround(){
   g.fillStyle = COL.bright; polyPath(g, P(LAYOUT.bright)); g.fill();
   g.filter = `blur(${8 * s}px)`;
   g.fillStyle = COL.dark; polyPath(g, P(LAYOUT.dark)); g.fill();
+  if (LAYOUT.lime && !Q.has('nolime')){ g.filter = `blur(${6 * s}px)`; g.globalAlpha = +(Q.get('la') || 1); g.fillStyle = Q.get('lc') ? '#' + Q.get('lc') : (COL.lime || '#70ac37'); polyPath(g, P(LAYOUT.lime)); g.fill(); g.globalAlpha = 1; }
   g.filter = 'none';
   // gentle pigment pooling
   for (let i = 0; i < 260; i++){ const x = R(0, TEXW), y = R(0, TEXH), r = R(40, 200) * s;
@@ -173,8 +174,9 @@ function paintGround(){
     const F = LAYOUT.fieldFix, q = 4, mw = Math.ceil(TEXW / q), mh = Math.ceil(TEXH / q);
     const mc = document.createElement('canvas'); mc.width = mw; mc.height = mh; const m = mc.getContext('2d', { willReadFrequently: true });
     const lay = (pts, col, bl) => { m.save(); m.scale(1 / q, 1 / q); m.filter = `blur(${bl * s / q}px)`; m.fillStyle = col; polyPath(m, P(pts)); m.fill(); m.restore(); };
-    const ch = (col, pts, bl) => { m.globalCompositeOperation = 'source-over'; m.fillStyle = '#000'; m.fillRect(0, 0, mw, mh); lay(pts, col, bl); return m.getImageData(0, 0, mw, mh).data; };
-    const mB = ch('#fff', LAYOUT.bright, 5), mD = ch('#fff', LAYOUT.dark, 8), mW = ch('#fff', LAYOUT.wheat, 3);
+    const LM = LAYOUT.lime && !Q.has('nolime') ? LAYOUT.lime : null;
+    const ch = (col, pts, bl, add, sub) => { m.globalCompositeOperation = 'source-over'; m.fillStyle = '#000'; m.fillRect(0, 0, mw, mh); lay(pts, col, bl); if (add) lay(add, '#fff', 6); if (sub) lay(sub, '#000', 6); return m.getImageData(0, 0, mw, mh).data; };
+    const mB = ch('#fff', LAYOUT.bright, 5, LM), mD = ch('#fff', LAYOUT.dark, 8, null, LM), mW = ch('#fff', LAYOUT.wheat, 3);
     const corr = new Float32Array(mw * mh * 3), ev = (c, u, v) => c[0] + c[1] * u + c[2] * v + c[3] * u * u + c[4] * u * v + c[5] * v * v;
     for (let j = 0; j < mh; j++) for (let i = 0; i < mw; i++){
       const k = j * mw + i, u = (i + 0.5) * q / KU - E, v = (j + 0.5) * q / KV - E;
