@@ -161,12 +161,12 @@ function paintGround(){
   paintTile(g, IMG_WHEAT, s, TILE_A);
   g.restore();
   // grass: fine short vertical ticks
-  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.5);
+  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.5), GM = +(Q.get("gm") ?? 0.6), GL = +(Q.get("gl") ?? 0.6), GWD = +(Q.get("gw") ?? 1);
   for (let i = 0; i < N; i++){
     const x = R(0, TEXW), y = R(0, TEXH);
     const l = R(3, 8) * s, t = rand();
     g.strokeStyle = t < 0.45 ? `rgba(55,115,25,${R(.07,.16).toFixed(3)})` : t < 0.9 ? `rgba(215,240,140,${R(.07,.17).toFixed(3)})` : `rgba(40,90,20,${R(.1,.18).toFixed(3)})`;
-    g.lineWidth = R(0.9, 1.6) * s; g.beginPath(); g.moveTo(x, y); g.lineTo(x + R(-1, 1) * s, y - l); g.stroke();
+    g.lineWidth = R(0.9, 1.6) * s * GWD; g.beginPath(); g.moveTo(x, y); if (GM){ const a = R(-GM, GM); g.lineTo(x + Math.cos(a) * l * GL, y + Math.sin(a) * l * GL); } else g.lineTo(x + R(-1, 1) * s, y - l); g.stroke();
   }
   { g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); paintTile(g, IMG_GRASS, s, TILE_A); g.restore(); }
   // fitted low-frequency colour correction per field (quadratic in board uv; see fieldfit.py)
