@@ -205,6 +205,13 @@ function paintGround(){
       d[o] += corr[k]; d[o + 1] += corr[k + 1]; d[o + 2] += corr[k + 2]; } }
     g.putImageData(im, 0, 0);
   }
+  // faint broad brush streaks across the fields (own PRNG so the rest of the board is unchanged)
+  const BST = +(Q.get('bst') ?? 0.05), BSN = +(Q.get('bsn') ?? 260), BSA = +(Q.get('bsa') ?? -0.35);
+  if (BST > 0){ const br = mulberry(+(Q.get('bseed') ?? 53)); g.save(); g.lineCap = 'round'; g.filter = `blur(${5 * s}px)`;
+    for (let k = 0; k < BSN; k++){ const x = br() * TEXW, y = br() * TEXH, L = (120 + 220 * br()) * s, an = BSA + (br() - .5) * .5, lt = br() < .5;
+      g.strokeStyle = lt ? `rgba(235,240,170,${BST})` : `rgba(40,90,20,${BST * .8})`; g.lineWidth = (14 + 22 * br()) * s;
+      g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(an) * L * .5 + (br() - .5) * 30 * s, y + Math.sin(an) * L * .5 + (br() - .5) * 30 * s, x + Math.cos(an) * L, y + Math.sin(an) * L); g.stroke(); }
+    g.restore(); }
   // hedgerows: soft dark bands
   const hedges = LAYOUT.hedges.map(P); const HW = i => (LAYOUT.hedgeW ? LAYOUT.hedgeW[i] : 1) * +(Q.get('hw') || 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
