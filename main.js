@@ -134,6 +134,7 @@ const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0,
 
 // ---------- ground painting ----------
 const EF = (k, t) => { const c = LAYOUT.edgeFit && LAYOUT.edgeFit[k]; if (!c) return 0; let r = 0; for (let i = c.length - 1; i >= 0; i--) r = r * t + c[i]; return r; };
+const ED = (k, t) => { const c = LAYOUT.edgeDet && !Q.has('nodet') && LAYOUT.edgeDet[k]; if (!c) return 0; const f = clamp((t + 0.1) / 1.2, 0, 1) * (c.length - 1), i = Math.min(c.length - 2, Math.floor(f)); return lerp(c[i], c[i + 1], f - i); };   // measured edge detail (edet.py)
 const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') ?? -0.12);
 const river = LAYOUT.river, pathL = LAYOUT.path;
 function paintGround(){
@@ -242,8 +243,16 @@ function paintGround(){
   // river: thin sandy banks, light edges, deep middle
   const rv = P(river), rw = LAYOUT.riverW * KU;
   g.filter = `blur(${1.5 * s}px)`;
-  g.strokeStyle = COL.bank; g.lineWidth = rw * 1.24; smoothPath(g, rv); g.stroke();
-  g.strokeStyle = COL.waterEdge; g.lineWidth = rw * 1.02; smoothPath(g, rv); g.stroke();
+  const RWA = +(Q.get('rwa') ?? 0), RWF = +(Q.get('rwf') ?? 1), wob = (hw, k) => {        // river outline with independent wobble per side (the reference's banks are hand-drawn)
+    const L = [], Rr = []; let acc = 0;
+    for (let i = 0; i < rv.length; i++){ const p = rv[i], q = rv[Math.min(i + 1, rv.length - 1)], o = rv[Math.max(i - 1, 0)]; if (i) acc += Math.hypot(p[0] - rv[i-1][0], p[1] - rv[i-1][1]);
+      let tx = q[0] - o[0], ty = q[1] - o[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl; const t = acc / (rw * 1.6) * RWF;
+      const BW = LAYOUT.riverBank && !Q.has('nobank') ? LAYOUT.riverBank : null, fl = BW ? BW.L[i] : 1, fr = BW ? BW.R[i] : 1;   // measured half-width profile (bankfit.py)
+      const wl = hw * fl * (1 + RWA * (vnoise(t, 11 + k) - 0.5) * 4), wr = hw * fr * (1 + RWA * (vnoise(t, 37 + k) - 0.5) * 4);
+      L.push([p[0] - ty * wl, p[1] + tx * wl]); Rr.push([p[0] + ty * wr, p[1] - tx * wr]); }
+    return L.concat(Rr.reverse()); };
+  g.fillStyle = COL.bank; polyPath(g, wob(rw * 0.62, 0)); g.fill();
+  g.fillStyle = COL.waterEdge; polyPath(g, wob(rw * 0.51, 5)); g.fill();
   const RB = +(Q.get('rb') || 0.12), RD = +(Q.get('rd') || 0.52), RM = +(Q.get('rm') || 0.68);
   g.filter = `blur(${rw * RB}px)`;
   g.strokeStyle = '#4f84bb'; g.lineWidth = rw * RM; smoothPath(g, rv); g.stroke();
@@ -256,16 +265,24 @@ function paintGround(){
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s * +(Q.get('eb') || 1)));
   const wash = [166, 204, 104], CR = 2.6;
-  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 5), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.5), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.3), A0 = +(Q.get('a0') ?? -0.05);
+  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 3), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1.8), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.8), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.2), A0 = +(Q.get('a0') ?? -0.05), RKP = +(Q.get('rkp') ?? 0.85);
+  const BA = +(Q.get('ba') ?? 0), BF = +(Q.get('bf') ?? 6), BS = +(Q.get('bs') ?? 0.25), FKT = +(Q.get('fkt') ?? 1.8), FSQ = +(Q.get('fsq') ?? 1), PZ = +(Q.get('pz') ?? 1), EMD = +(Q.get('emd') ?? 1), HZ = +(Q.get('hz') ?? 0.3), PW = +(Q.get('pw') ?? 1.5), CM0 = +(Q.get('cm0') ?? 0), EBL = +(Q.get('ebl') ?? 0), EBR = +(Q.get('ebr') ?? 0.8), EBK = +(Q.get('ebk') ?? 1);
+  const bay = (t, sd) => { if (!BA) return 0; const q = t * BF + sd * 0.37, i0 = Math.floor(q), f = q - i0, w = clamp((f - (1 - BS)) / BS, 0, 1), ww = w * w * (3 - 2 * w);
+    return BA * (lerp(hash2(i0, sd * 91 + 5), hash2(i0 + 1, sd * 91 + 5), ww) - 0.5) * 2; };            // stepped bays: piecewise-flat offsets with short ramps
+  let EK = 0;
+  const eAt = (x, y) => { const u = x / KU - E, v = y / KV - E;                                       // metres from the nominal edge (EK = 2 when the top side is nearest)
+    const l = (u - EF('left', v) - ED('left', v)) * W + bay(v, 0), r = (1 - u - EF('right', v) - ED('right', v)) * W + bay(v, 1), t = (v - EF('top', u) - ED('top', u)) * D + bay(u, 2), b = (1 - v - EF('bottom', u) - ED('bottom', u)) * D + bay(u, 3);
+    const eu = Math.min(l, r), ev = Math.min(t, b); let e = Math.min(eu, ev);
+    if (u > 0.5 && v > 0.5 && eu < CR && ev < CR) e = Math.min(e, CR - Math.hypot(CR - eu, CR - ev));   // the reference's worn bottom-right corner
+    EK = e === t ? 2 : 0; return e; };
+  const kAt = (x, y, e) => (e + (fbm(x * 0.012 / s, y * 0.012 / s) - 0.5) * 0.55 + (vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5) * 0.12 + EDGE_O) / EDGE_W;
+  let cBK = -1, cKB = 0, cTop = false; const band = EBL > 0 ? new Uint8Array(TEXW * TEXH) : null;
   for (let y = 0; y < TEXH; y++){
-    const v = y / KV - E;
     for (let x = 0; x < TEXW; x++){
-      const u = x / KU - E;
-      const eu = Math.min(u - EF('left', v), 1 - u - EF('right', v)) * W, ev = Math.min(v - EF('top', u), 1 - v - EF('bottom', u)) * D;     // metres from the nominal edge
-      let e = Math.min(eu, ev);
-      if (u > 0.5 && v > 0.5 && eu < CR && ev < CR) e = Math.min(e, CR - Math.hypot(CR - eu, CR - ev));   // the reference's worn bottom-right corner
+      const e = eAt(x, y), top = EK === 2;
       if (e > 1.6) continue;
-      const i = (y * TEXW + x) * 4;
+      if (band && e < EBR) band[y * TEXW + x] = 1;
+      const i = (y * TEXW + x) * 4, bl = d[i + 2] - d[i] > 25 ? RKP : 0;
       const n = fbm(x * 0.012 / s, y * 0.012 / s) - 0.5, n2 = vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5;
       const ee = e + n * 0.55 + n2 * 0.12;                                  // jittered edge distance
       const k = (ee + EDGE_O) / EDGE_W;                                        // 0 = fully paper, 1 = fully paint
@@ -274,18 +291,31 @@ function paintGround(){
         const kk = k + (vnoise(x * 0.35 / s, y * 0.35 / s) - 0.5) * SG;          // dry-brush grain
         const t = clamp(kk, 0, 1), sm = Math.pow(t * t * (3 - 2 * t), SP);
         a = kk > A0 ? 1 : 0;
-        if (!a && kk > -FK){                                                   // dry-brush flecks beyond the wash
-          const fb = Math.max(1, Math.round(FB * s)), hx = Math.floor(x / fb), hy = Math.floor(y / (fb * FA));
-          const pr = Math.pow(1 + kk / FK, 2.2) * FP * (0.4 + vnoise(x * 0.05 / s, y * 0.05 / s) * 1.2);
-          if (hash2(hx + 7, hy + 3) < pr){ a = 1; const tf = FT + hash2(hx, hy + 11) * FV; d[i] = lerp(PC[0], d[i], tf); d[i + 1] = lerp(PC[1], d[i + 1], tf); d[i + 2] = lerp(PC[2], d[i + 2], tf); }
+        const fb = Math.max(1, Math.round(FB * s)), hx = Math.floor(x / fb), hy = Math.floor(y / (fb * FA));
+        let kf = kk, FKs = FK * (top ? FKT : 1);
+        if (EMD){                                                                // block dissolve: each block is paint or paper, paint odds ramp across the edge zone
+          const key = hy * 100000 + hx; if (key !== cBK){ cBK = key; const cx = (hx + 0.5) * fb, cy = (hy + 0.5) * fb * FA, eb = eAt(cx, cy); cTop = EK === 2; cKB = kAt(cx, cy, eb); }
+          const FKb = FK * (cTop ? FKT : 1); let p = clamp((cKB + FKb) / (FKb + HZ), 0, 1); p = Math.pow(p, PW) * (0.7 + 0.6 * vnoise(hx * 0.4, hy * 0.4));
+          if (cKB >= HZ) a = 1; else { a = hash2(hx + 7, hy + 3) < p ? 1 : 0; if (a){ const c = clamp(CM0 + (1 - CM0) * p + (hash2(hx, hy + 11) - 0.5) * FV, 0, 1) + (1 - CM0) * bl * 0; const cc = c + (1 - c) * bl; d[i] = lerp(PC[0], d[i], cc); d[i + 1] = lerp(PC[1], d[i + 1], cc); d[i + 2] = lerp(PC[2], d[i + 2], cc); } }
+          if (a && sm < 1){ let sf = EF0 + (1 - EF0) * sm; sf += (1 - sf) * bl; d[i] = lerp(PC[0], d[i], sf); d[i + 1] = lerp(PC[1], d[i + 1], sf); d[i + 2] = lerp(PC[2], d[i + 2], sf); }
+        } else {
+        if (!a && FSQ){ const key = hy * 100000 + hx; if (key !== cBK){ cBK = key; const cx = (hx + 0.5) * fb, cy = (hy + 0.5) * fb * FA, eb = eAt(cx, cy); cTop = EK === 2; cKB = kAt(cx, cy, eb); } kf = cKB; FKs = FK * (cTop ? FKT : 1); }   // whole square blocks
+        if (!a && kf > -FKs){                                                   // dry-brush flecks beyond the wash
+          const pr = Math.pow(1 + Math.min(kf, 0) / FKs, 2.2) * FP * (0.4 + vnoise(hx * fb * 0.05 / s, hy * fb * FA * 0.05 / s) * 1.2);
+          if (hash2(hx + 7, hy + 3) < pr){ a = 1; let tf = FT + hash2(hx, hy + 11) * FV; tf += (1 - tf) * bl; d[i] = lerp(PC[0], d[i], tf); d[i + 1] = lerp(PC[1], d[i + 1], tf); d[i + 2] = lerp(PC[2], d[i + 2], tf); }
         }
-        if (a && sm < 1){ const sf = kk >= A0 ? EF0 + (1 - EF0) * sm : FLK; d[i] = lerp(PC[0], d[i], sf); d[i + 1] = lerp(PC[1], d[i + 1], sf); d[i + 2] = lerp(PC[2], d[i + 2], sf); }
+        if (a && sm < 1){ let sf = kk >= A0 ? EF0 + (1 - EF0) * sm : FLK; sf += (1 - sf) * bl; d[i] = lerp(PC[0], d[i], sf); d[i + 1] = lerp(PC[1], d[i + 1], sf); d[i + 2] = lerp(PC[2], d[i + 2], sf); } }
       } else if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
-      d[i + 3] = a ? 255 : 0;
-      const f = clamp(1 - (ee - 0.05) / 0.9, 0, 1) * WF;
-      if (f > 0){ d[i] = lerp(d[i], wash[0], f); d[i + 1] = lerp(d[i + 1], wash[1], f); d[i + 2] = lerp(d[i + 2], wash[2], f); }
+      d[i + 3] = a ? 255 : 0; if (!a && PZ){ d[i] = PC[0]; d[i + 1] = PC[1]; d[i + 2] = PC[2]; }   // paper colour under discarded texels (no dark fringe from filtering)
+      const f = clamp(1 - (ee - 0.05) / 0.9, 0, 1) * WF * (1 - bl);
+      if (f > 0 && a){ d[i] = lerp(d[i], wash[0], f); d[i + 1] = lerp(d[i + 1], wash[1], f); d[i + 2] = lerp(d[i + 2], wash[2], f); }
     }
   }
+  if (band){                                                                     // soften the dissolve band (the reference's edge blocks are slightly blurred)
+    const src = new Uint8ClampedArray(d), r = Math.max(1, Math.round(EBK * s));
+    for (let y = r; y < TEXH - r; y++) for (let x = r; x < TEXW - r; x++){ const j = y * TEXW + x; if (!band[j]) continue; const o = j * 4;
+      let R0 = 0, G0 = 0, B0 = 0, nn = 0; for (let yy = -r; yy <= r; yy++) for (let xx = -r; xx <= r; xx++){ const q = o + (yy * TEXW + xx) * 4; R0 += src[q]; G0 += src[q + 1]; B0 += src[q + 2]; nn++; }
+      d[o] = lerp(src[o], R0 / nn, EBL); d[o + 1] = lerp(src[o + 1], G0 / nn, EBL); d[o + 2] = lerp(src[o + 2], B0 / nn, EBL); } }
   g.putImageData(img, 0, 0);
   return cv;
 }
@@ -331,18 +361,18 @@ const riverPts = riverCurve.getSpacedPoints(220);
 const RIVER_HALF = LAYOUT.riverW * W / 2;
 function riverDist(x, z){ let best = 1e9; for (let i = 0; i < riverPts.length; i++){ const p = riverPts[i], d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < best) best = d; } return Math.sqrt(best); }
 {
-  const N = riverPts.length, pos = [], uvs = [], idx = []; let acc = 0;
+  const N = riverPts.length, pos = [], uvs = [], idx = [], tuv = []; let acc = 0;
   for (let i = 0; i < N; i++){
     const p = riverPts[i], q = riverPts[Math.min(i + 1, N - 1)], o = riverPts[Math.max(i - 1, 0)];
     const t = new THREE.Vector3().subVectors(q, o).normalize(), n = new THREE.Vector3(-t.z, 0, t.x);
     if (i) acc += p.distanceTo(riverPts[i - 1]);
-    for (const s of [-1, 1]){ pos.push(p.x + n.x * s * RIVER_HALF * 0.95, 0.012, p.z + n.z * s * RIVER_HALF * 0.95); uvs.push((s + 1) / 2, acc); }
+    for (const s of [-1, 1]){ const X = p.x + n.x * s * RIVER_HALF * 0.95, Z = p.z + n.z * s * RIVER_HALF * 0.95, [bu, bv] = w2uv(X, Z); pos.push(X, 0.012, Z); uvs.push((s + 1) / 2, acc); tuv.push((bu + E) / (1 + 2 * E), 1 - (bv + E) / (1 + 2 * E)); }
     if (i < N - 1){ const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
   }
-  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geo.setIndex(idx);
-  const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLen: { value: acc } },
-    vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.); }`,
-    fragmentShader: `uniform float uTime; uniform float uLen; varying vec2 vUv;
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geo.setAttribute('tuv', new THREE.Float32BufferAttribute(tuv, 2)); geo.setIndex(idx);
+  const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLen: { value: acc }, uG: { value: groundTex } },
+    vertexShader: `attribute vec2 tuv; varying vec2 vUv; varying vec2 vT; void main(){ vUv=uv; vT=tuv; gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.); }`,
+    fragmentShader: `uniform float uTime; uniform float uLen; uniform sampler2D uG; varying vec2 vUv; varying vec2 vT;
       #define SX ${(+(Q.get('sx') ?? 14)).toFixed(3)}
       #define SY ${(+(Q.get('sy') ?? 0.25)).toFixed(3)}
       #define SA ${(+(Q.get('sa') ?? 0.09)).toFixed(3)}
@@ -363,7 +393,8 @@ function riverDist(x, z){ let best = 1e9; for (let i = 0; i < riverPts.length; i
         float rim=0.;
         for (int k=0;k<2;k++){ float xr=k==0?x:1.-x; float on=RS>1.5?1.:(RS>0.5?float(k):1.-float(k));
           rim=max(rim,on*smoothstep(.0,.12,xr)*smoothstep(RW,RW*.2,xr)*smoothstep(RN,RN+RK,n(vec2(s*RF-uTime*.1,3.+float(k)*17.)+vec2(xr*3.,0.)))); }
-        float a=st*SA*edge*ends, ar=rim*RA*ends;
+        vec4 gt=texture2D(uG,vT); float wet=step(.5,gt.a)*smoothstep(.04,.14,gt.b-gt.r);   // only over painted water (not paper / flecks)
+        float a=st*SA*edge*ends*wet, ar=rim*RA*ends*wet;
         gl_FragColor=vec4(mix(vec3(.86,.93,1.),vec3(.55,.82,.95),ar/(a+ar+1e-4)),a+ar*(1.-a));
         #include <colorspace_fragment>
       }` });
@@ -389,8 +420,8 @@ function tint(g, c){ const n = g.attributes.position.count, a = new Float32Array
 const trees = [];
 const TREE_K = +(Q.get('tk') || 1.0);
 function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
-  if (fit){ cell = fit.cell; tk *= fit.s; }
   const pink = kind === 'p';
+  if (fit){ fit = { ...fit }; if (pink){ fit.cell = +(Q.get('pcl') ?? 24); fit.s *= +(Q.get('pks') ?? 0.93); fit.dy += +(Q.get('pdy') ?? 0); fit.dx += +(Q.get('pdx') ?? 0); } cell = fit.cell; tk *= fit.s; }
   // crown is ~1 unit wide; centre height ~0.62 of the width (sits low, trunk hidden)
   const far = py < 300, cy = far ? 0.54 : 0.5;
   const { p, size } = placeByPixel(px, py, wpx * 0.96, sz => sz * cy);
@@ -408,7 +439,7 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
     const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
     const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
     const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
-    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '0.98,1.09,0.84').toString().split(',').map(Number), THREE.SRGBColorSpace));
+    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '1.04,1.2,0.82').toString().split(',').map(Number), THREE.SRGBColorSpace));
     const cen = fit ? [0.5 - (fit.dx || 0) / fit.cpx, ccy + (fit.dy || 0) / fit.cpx] : [0.5, ccy];
     const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78, shade: pink ? (Q.get('sh') || '0.88,0.6,2.3').split(',').map(Number) : undefined });
     b.position.set(0, cy, 0); grp.add(b); if (Q.has('notree')) b.visible = false; grp.userData.bb = { b, cw: cw * size, ccy, cell, cy: cy * size }; }
