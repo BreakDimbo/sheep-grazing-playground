@@ -1,0 +1,8 @@
+Use your built-in image generation tool (default settings) to create ONE image, then copy the resulting PNG to /workspace/sheep/gen/trees2.png. Do not edit it.
+
+The attached image is only a STYLE reference (do not copy it): soft toy-like 3D-rendered cartoon trees in a miniature diorama, seen from above at about 35 degrees.
+
+Image content: a sprite sheet of 8 separate small cartoon trees in a strict 4 columns x 2 rows grid, evenly spaced, each centred in its cell, similar size, nothing overlapping, generous gaps. Background: perfectly flat uniform pure magenta (#FF00FF), no gradient, no ground, no ground shadows, no text.
+Each tree crown looks like soft MELTED CLAY / metaballs: about 15-25 medium irregular lumps that MERGE smoothly into one another (no distinct separate balls, no deep crevices, gentle shallow folds and dents), an irregular slightly lumpy silhouette, matte satin surface with soft specular sheen. Warm key light from the upper LEFT: lighter yellow-green on the upper-left lumps, a clearly darker deep green on the lower-right half of the crown (strong form shading). A thin dark brown trunk is visible under the crown.
+Colours for cells 1-6: medium grass green, not neon: highlights #8ccc4c, midtones #5fae35, shadows #3a7d24. Cell 1 round with visible trunk, cell 2 slightly wider, cell 3 round and lighter, cell 4 darker green and slightly lopsided, cell 5 and 6 slightly taller UPRIGHT crowns (about 1.15 times taller than wide).
+Cells 7-8: the same melted-clay style but a soft PINK crown (highlights #f3a6d2, midtones #df82c0, shadows #a95c99), round.

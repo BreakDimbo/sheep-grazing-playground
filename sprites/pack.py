@@ -23,12 +23,14 @@ for r, n in enumerate(sheets):
 cv2.imwrite('site/sprites/sheep.webp', cv2.cvtColor(A, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 92])
 # trees
 TC = 384
-s = key('gen/trees.png'); T = np.zeros((TC * 2, TC * 4, 4), np.uint8); cells = []
-for i, o in enumerate(s):
-    k = 370 / max(o['w'], o['h'])
-    cells.append(place(T, o['rgba'], 0, 0, TC, k, i % 4, i // 4))
+T = np.zeros((TC * 2, TC * 8, 4), np.uint8); cells = []
+for si, sheet in enumerate(['gen/trees.png', 'gen/trees2.png']):
+    s = key(sheet); assert len(s) == 8, (sheet, len(s))
+    for i, o in enumerate(s):
+        k = 370 / max(o['w'], o['h'])
+        cells.append(place(T, o['rgba'], 0, 0, TC, k, i, si))
 cv2.imwrite('site/sprites/trees.webp', cv2.cvtColor(T, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 92])
-meta['trees'] = {'cell': TC, 'cols': 4, 'cells': cells}
+meta['trees'] = {'cell': TC, 'cols': 8, 'cells': cells}
 if os.path.exists('gen/clouds.png'):
     s = key('gen/clouds.png', 'black'); CC = 512; Cl = np.zeros((CC * 2, CC * 2, 4), np.uint8); cells = []
     for i, o in enumerate(s[:4]):

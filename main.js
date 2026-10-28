@@ -315,7 +315,8 @@ function tint(g, c){ const n = g.attributes.position.count, a = new Float32Array
 // ---------- trees: lumpy puffball crowns ----------
 const trees = [];
 const TREE_K = +(Q.get('tk') || 1.0);
-function makeTree(px, py, wpx, kind, cell, tintC, tk = 1){
+function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
+  if (fit){ cell = fit.cell; tk *= fit.s; }
   const pink = kind === 'p';
   // crown is ~1 unit wide; centre height ~0.62 of the width (sits low, trunk hidden)
   const far = py < 300, cy = far ? 0.54 : 0.5;
@@ -333,14 +334,16 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1){
   { const T = SPR.trees, c = T.cells[cell], cols = T.cols, rows = Math.ceil(T.cells.length / cols);
     const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
     const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
-    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], [0.5, ccy], { tint: tintC ?? 0xffffff, bias: size * 0.7, sat: pink ? 0.95 : 0.78 });
-    b.position.set(0, cy, 0); grp.add(b); }
+    const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
+    const cen = fit ? [0.5 - (fit.dx || 0) / fit.cpx, ccy + (fit.dy || 0) / fit.cpx] : [0.5, ccy];
+    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, sat: pink ? 0.95 : 0.78 });
+    b.position.set(0, cy, 0); grp.add(b); if (Q.has('notree')) b.visible = false; grp.userData.bb = { b, cw: cw * size, ccy, cell, cy: cy * size }; }
   if (false && far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
   grp.rotation.y = R(0, 6.28); scene.add(grp);
   trees.push({ grp, crown, x: p.x, z: p.z, r: size * 0.5, phase: R(0, 6) });
 }
 const TREE_CELLS = [0, 2, 3, 1, 6, 2, 1], TREE_SCALE = [1, 1, 1, 1, 1, 1, 1.18], TREE_TINT = [0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xeac4e6, 0xd8e4c8, 0xd8e4c8];
-LAYOUT.treesPx.forEach(([x, y, w, k], i) => makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i]));
+LAYOUT.treesPx.forEach(([x, y, w, k], i) => makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i], LAYOUT.treesFit ? LAYOUT.treesFit[i] : null));
 
 // ---------- clouds (placed on the rays of the reference pixels) ----------
 const clouds = [];
@@ -731,4 +734,5 @@ renderer.setAnimationLoop(() => {
   frames++; if (frames === 3) document.body.dataset.ready = '1';
 });
 window.__sheep = { sprInfo: () => sheep.map(s => { const v = s.root.position.clone().project(camera), d = -s.root.position.clone().applyMatrix4(camera.matrixWorldInverse).z;
-    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: SHEEP_CELL_W * s.root.scale.x * FPX / d, frame: s.frame }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
+    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: SHEEP_CELL_W * s.root.scale.x * FPX / d, frame: s.frame }; }), treeInfo: () => trees.map(t => { const u = t.grp.userData.bb, w = new THREE.Vector3(t.grp.position.x, u.cy, t.grp.position.z), v = w.clone().project(camera), d = -w.clone().applyMatrix4(camera.matrixWorldInverse).z;
+    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: u.cw * FPX / d, ccy: u.ccy, idx: u.cell }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };

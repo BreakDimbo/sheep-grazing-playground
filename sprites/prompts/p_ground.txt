@@ -1,0 +1,8 @@
+Use your built-in image generation tool (default settings) to create ONE square image, then copy the resulting PNG to /workspace/sheep/gen/ground.png. Do not edit it.
+
+The attached image is only a STYLE reference (do not copy it): a painterly, slightly 3D-rendered miniature meadow seen from above.
+
+Image content: a flat, evenly lit, perfectly top-down texture swatch split into exactly two halves side by side with a straight vertical boundary in the middle:
+LEFT half: a painterly GRASS texture, uniform medium green (average colour about #78b844), made of thousands of tiny short vertical brush strokes and dabs, slightly lighter yellow-green strokes (#a6d468) and slightly darker strokes (#4f8f2e) evenly mixed, fine grain, no flowers, no objects, no shadows, no vignette, no large-scale gradients.
+RIGHT half: a painterly WHEAT / dry field texture, uniform golden ochre (average about #cdb05a), tiny short vertical strokes, lighter (#e6cf7f) and darker (#a88b3c) strokes evenly mixed, no objects, no gradient.
+Both halves must be homogeneous so they can be used as tileable textures.
