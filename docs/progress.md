@@ -20,3 +20,4 @@ lime .979/2.24, wheat .987/0.75, river .931/4.70, path .957/2.63, hedges .903/4.
 | H4 | fine grass grain: vertical ticks + pale clover dabs (offscreen blur) | .962 / 2.10 | grain reads like ref |
 | H5 | fieldFix refit after flowers/grain | .962 / 2.10 | — |
 | H6 | hedges: halo alpha ×0.6, crisper core (blur ×0.6), noise-wobbled core width, per-hedge width refit | .962 / 2.09; hedges lf .901, bdE 4.05 | crisp irregular outline like ref |
+| H7 | river: patchy light-cyan rims on both banks (crisp-edged noise patches, drift slowly), thin long flow streaks (were oval blobs), deeper core (RD .44→.52) | .962 / 2.09; river lf .932→.933, bdE 4.48→4.46 | rims + streaks read like ref (h7_river3.jpg); ref bank line slightly wavier |

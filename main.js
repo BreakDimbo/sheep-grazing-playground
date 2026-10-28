@@ -234,7 +234,7 @@ function paintGround(){
   g.filter = `blur(${1.5 * s}px)`;
   g.strokeStyle = COL.bank; g.lineWidth = rw * 1.24; smoothPath(g, rv); g.stroke();
   g.strokeStyle = COL.waterEdge; g.lineWidth = rw * 1.02; smoothPath(g, rv); g.stroke();
-  const RB = +(Q.get('rb') || 0.12), RD = +(Q.get('rd') || 0.44), RM = +(Q.get('rm') || 0.68);
+  const RB = +(Q.get('rb') || 0.12), RD = +(Q.get('rd') || 0.52), RM = +(Q.get('rm') || 0.68);
   g.filter = `blur(${rw * RB}px)`;
   g.strokeStyle = '#4f84bb'; g.lineWidth = rw * RM; smoothPath(g, rv); g.stroke();
   g.strokeStyle = COL.waterDeep; g.lineWidth = rw * RD; smoothPath(g, rv); g.stroke();
@@ -333,15 +333,28 @@ function riverDist(x, z){ let best = 1e9; for (let i = 0; i < riverPts.length; i
   const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLen: { value: acc } },
     vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.); }`,
     fragmentShader: `uniform float uTime; uniform float uLen; varying vec2 vUv;
+      #define SX ${(+(Q.get('sx') ?? 14)).toFixed(3)}
+      #define SY ${(+(Q.get('sy') ?? 0.25)).toFixed(3)}
+      #define SA ${(+(Q.get('sa') ?? 0.09)).toFixed(3)}
+      #define RS ${(+(Q.get('rs') ?? 2)).toFixed(1)}
+      #define RW ${(+(Q.get('rw') ?? 0.35)).toFixed(3)}
+      #define RN ${(+(Q.get('rn') ?? 0.45)).toFixed(3)}
+      #define RK ${(+(Q.get('rk') ?? 0.1)).toFixed(3)}
+      #define RF ${(+(Q.get('rf') ?? 0.7)).toFixed(3)}
+      #define ST ${(+(Q.get('rst') ?? 0.84)).toFixed(3)}
+      #define RA ${(+(Q.get('ra') ?? 0.25)).toFixed(3)}
       float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
       float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y); }
       void main(){
         float x=vUv.x, s=vUv.y;
         float edge=smoothstep(0.,.22,x)*smoothstep(1.,.78,x);
         float ends=smoothstep(0.3,1.5,s)*smoothstep(uLen-0.3,uLen-1.5,s);
-        float st=smoothstep(.74,.9,n(vec2(x*5.,s*1.1-uTime*.45)));
-        float a=st*.13*edge*ends;
-        gl_FragColor=vec4(vec3(.86,.93,1.),a);
+        float st=smoothstep(ST,ST+.16,n(vec2(x*SX,s*SY-uTime*.45)));
+        float rim=0.;
+        for (int k=0;k<2;k++){ float xr=k==0?x:1.-x; float on=RS>1.5?1.:(RS>0.5?float(k):1.-float(k));
+          rim=max(rim,on*smoothstep(.0,.12,xr)*smoothstep(RW,RW*.2,xr)*smoothstep(RN,RN+RK,n(vec2(s*RF-uTime*.1,3.+float(k)*17.)+vec2(xr*3.,0.)))); }
+        float a=st*SA*edge*ends, ar=rim*RA*ends;
+        gl_FragColor=vec4(mix(vec3(.86,.93,1.),vec3(.55,.82,.95),ar/(a+ar+1e-4)),a+ar*(1.-a));
         #include <colorspace_fragment>
       }` });
   const ribbon = new THREE.Mesh(geo, mat); ribbon.renderOrder = 1; scene.add(ribbon);
