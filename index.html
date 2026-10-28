@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Sheep grazing grass · a playable watercolor miniature</title>
+<meta name="description" content="An interactive watercolor miniature farm: click the grass to place sheep, select one to make it idle, graze, walk or jump, drag to move it, pull the corner handles to resize it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2717%27 r=%2711%27 fill=%27%23f4ecdd%27/%3E%3Cellipse cx=%2724%27 cy=%2719%27 rx=%275%27 ry=%274%27 fill=%27%232b211d%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/"}}</script>
+</head>
+<body>
+<div id="paper"></div>
+<canvas id="c" aria-label="Miniature farm scene"></canvas>
+
+<div id="sel" hidden>
+  <div class="box"><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>
+  <div class="dim"></div>
+</div>
+<div id="bar" hidden role="toolbar" aria-label="Sheep actions">
+  <button data-mode="idle">Idle</button><button data-mode="graze">Graze</button><button data-mode="walk">Walk</button><button data-mode="jump">Jump</button>
+  <span class="sep"></span>
+  <button class="ic" data-act="rotl" aria-label="Turn left"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button>
+  <button class="ic" data-act="rotr" aria-label="Turn right"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4.5h-4.5"/></svg></button>
+  <span class="sep"></span>
+  <button class="ic" data-act="dup" aria-label="Duplicate"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M5 16V5.5A1.5 1.5 0 0 1 6.5 4H16"/></svg></button>
+  <button class="ic" data-act="del" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13M10 10.5v6M14 10.5v6"/></svg></button>
+</div>
+
+<div id="panel">
+  <div class="seg" id="tools" role="radiogroup" aria-label="Tool">
+    <button data-tool="place" class="on" title="Tap grass to place a sheep, tap a sheep to select it">Place</button>
+    <button data-tool="call" title="Tap or drag to call the flock">Call</button>
+    <button data-tool="shoo" title="Tap or drag to scare sheep away">Shoo</button>
+    <button data-tool="grass" title="Paint to regrow lush grass">Grass</button>
+  </div>
+  <span class="sep"></span>
+  <div class="count"><button id="minus" aria-label="Remove a sheep">−</button><span id="n">0</span><button id="plus" aria-label="Add a sheep">+</button></div>
+  <span class="sep"></span>
+  <div class="seg" id="speed" aria-label="Speed"><button data-s="0.5">½×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
+  <span class="sep"></span>
+  <button id="reset" class="ic" title="Reset scene and view" aria-label="Reset"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button>
+</div>
+<div id="hint">Tap the grass to place a sheep · tap a sheep to select · drag to orbit</div>
+<a id="credit" href="https://x.com/AreadneMaria/status/2114898325451444419" target="_blank" rel="noopener">After “sheep grazing grass” by areadne · fan reimplementation</a>
+<script type="module" src="main.js"></script>
+</body>
+</html>
