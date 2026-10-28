@@ -132,6 +132,7 @@ const fbm = (x, y) => vnoise(x, y) * 0.55 + vnoise(x * 2.1, y * 2.1) * 0.28 + vn
 const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
 // ---------- ground painting ----------
+const EF = (k, t) => { const c = LAYOUT.edgeFit && LAYOUT.edgeFit[k]; if (!c) return 0; let r = 0; for (let i = c.length - 1; i >= 0; i--) r = r * t + c[i]; return r; };
 const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') || 0.1);
 const river = LAYOUT.river, pathL = LAYOUT.path;
 function paintGround(){
@@ -214,13 +215,13 @@ function paintGround(){
 
   // ragged paper edge -> alpha (block-dithered, used with alphaTest), with a pale wash toward the rim
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
-  const blk = Math.max(2, Math.round(3.2 * s));
+  const blk = Math.max(2, Math.round(3.2 * s * +(Q.get('eb') || 1)));
   const wash = [166, 204, 104], CR = 2.6;
   for (let y = 0; y < TEXH; y++){
     const v = y / KV - E;
     for (let x = 0; x < TEXW; x++){
       const u = x / KU - E;
-      const eu = Math.min(u, 1 - u) * W, ev = Math.min(v, 1 - v) * D;     // metres from the nominal edge
+      const eu = Math.min(u - EF('left', v), 1 - u - EF('right', v)) * W, ev = Math.min(v - EF('top', u), 1 - v - EF('bottom', u)) * D;     // metres from the nominal edge
       let e = Math.min(eu, ev);
       if (u > 0.5 && v > 0.5 && eu < CR && ev < CR) e = Math.min(e, CR - Math.hypot(CR - eu, CR - ev));   // the reference's worn bottom-right corner
       if (e > 1.6) continue;
