@@ -419,7 +419,7 @@ class Sheep {
     this.legs = [];
     for (const [lx, lz] of [[0.36, 0.2], [0.36, -0.2], [-0.36, 0.2], [-0.36, -0.2]]){ const l = new THREE.Mesh(legGeo, faceMat); l.position.set(lx * 1.2, 0.38, lz * 0.9); this.body.add(l); this.legs.push(l); this.meshes.push(l); }
     for (const m of this.meshes){ m.castShadow = true; m.receiveShadow = false; m.material = shadowOnly; }   // 3D rig only casts the shadow; the look is the painted sprite
-    this.spr = billboard(TEX_SHEEP, atlasRect(8, 4, 0, 0), [1, 1], [0.5, 6 / 256], { bias: 0.9, tint: SHEEP_TINT }); this.root.add(this.spr); this.frame = -1;
+    this.spr = billboard(TEX_SHEEP, atlasRect(8, 4, 0, 0), [1, 1], [0.5, 6 / 256], { bias: 0.9, tint: SHEEP_TINT }); this.root.add(this.spr); this.frame = -1; if (Q.has('nospr')) this.spr.visible = false;
     this.hit = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.25, 1.2).translate(0.15, 0.62, 0), new THREE.MeshBasicMaterial({ visible: false })); this.root.add(this.hit); this.hit.userData.sheep = this;
     this.root.position.set(x, 0, z);
     this.heading = opts.heading ?? R(-Math.PI, Math.PI); this.root.rotation.y = this.heading; this.targetHeading = this.heading;
@@ -581,8 +581,15 @@ function populate(){
   for (const sp of LAYOUT.sheep){
     const p = rayAtY(sp.px[0], sp.px[1], SHEEP_CY * SHEEP_SCALE); let h = Math.PI / 2;
     const d = sp.dir; const f = rayAtY(sp.px[0] + d[0] * 40, sp.px[1] + d[1] * 40, SHEEP_CY * SHEEP_SCALE); h = Math.atan2(-(f.z - p.z), f.x - p.x);
-    const s = new Sheep(p.x, p.z, { heading: h, state: 'graze', size: 1 });
-    
+    const fit = sp.fit;
+    if (fit){   // painted view fitted to the reference: pick the heading that shows that view, nudge position/size
+      const q = rayAtY(sp.px[0] + fit.dx, sp.px[1] + fit.dy, SHEEP_CY * SHEEP_SCALE); p.x = q.x; p.z = q.z;
+      const th = Math.PI - fit.col * Math.PI / 4, cf = refCam.getWorldDirection(new THREE.Vector3()); cf.y = 0; cf.normalize();
+      const sx = Math.cos(th), sz = -Math.sin(th) / DIR_SQ, fx = sx * -cf.z + sz * cf.x, fz = sx * cf.x + sz * cf.z;
+      h = Math.atan2(-fz, fx);
+    }
+    const s = new Sheep(p.x, p.z, { heading: h, state: fit && fit.row === 1 ? 'idle' : 'graze', size: fit ? fit.s : 1 });
+
   }
 }
 
@@ -723,4 +730,5 @@ renderer.setAnimationLoop(() => {
   placeSelection(); if (selected) refreshBar();
   frames++; if (frames === 3) document.body.dataset.ready = '1';
 });
-window.__sheep = { sheep, select, camera, controls, homeView, uv2w, w2uv, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
+window.__sheep = { sprInfo: () => sheep.map(s => { const v = s.root.position.clone().project(camera), d = -s.root.position.clone().applyMatrix4(camera.matrixWorldInverse).z;
+    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: SHEEP_CELL_W * s.root.scale.x * FPX / d, frame: s.frame }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
