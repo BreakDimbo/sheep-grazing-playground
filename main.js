@@ -46,14 +46,15 @@ const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform vec2 uCenter; uni
   void main(){ vUv = uRect.xy + uv * uRect.zw; vL = uv;
     vec4 mv = modelViewMatrix * vec4(0., 0., 0., 1.); float k = 1. - uBias / length(mv.xyz); mv.xyz *= k;   // pulled toward the eye so the card never cuts into the ground
     mv.xy += (uv - uCenter) * uSize * k; gl_Position = projectionMatrix * mv; }`;
-const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec4 uFade; varying vec2 vUv; varying vec2 vL;
+const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec4 uFade; varying vec2 vUv; varying vec2 vL;
   float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)) + uSeed) * 43758.5453); }
   float nn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + 1.), f.x), f.y); }
   void main(){ vec4 c = texture2D(map, vUv); c.a *= uAlpha;
     if (uReveal < 1.){ float n = nn(vL * 9.) * 0.65 + nn(vL * 23.) * 0.35; if (n * 0.75 + vL.x * 0.45 > uReveal * 1.2) discard; }
     c.a *= clamp(uFade.x + uFade.y * vL.x + uFade.z * vL.y, uFade.w, 1.);
     if (c.a < 0.02) discard;
-    c.rgb = mix(vec3(dot(c.rgb, vec3(.2126, .7152, .0722))), c.rgb, uSat);
+    float lu = dot(c.rgb, vec3(.2126, .7152, .0722)); c.rgb = mix(vec3(lu), c.rgb, uSat);
+    c.rgb *= mix(vec3(1.), uShade, smoothstep(0.45, 0.04, lu));
     gl_FragColor = vec4(c.rgb * uTint, c.a);
     #include <colorspace_fragment>
   }`;
@@ -61,7 +62,7 @@ const BB_GEO = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
 function billboard(tex, rect, size, center, opts = {}){
   const m = new THREE.ShaderMaterial({ vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: opts.depthWrite ?? true,
     uniforms: { map: { value: tex }, uRect: { value: new THREE.Vector4(...rect) }, uSize: { value: new THREE.Vector2(...size) }, uCenter: { value: new THREE.Vector2(...center) },
-      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
+      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
   const b = new THREE.Mesh(BB_GEO, m); b.frustumCulled = false; return b;
 }
 // atlas rect for (col,row) of a grid; v flipped for GL
@@ -371,9 +372,9 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
     const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
     const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
     const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
-    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '1.07,1.17,0.95').toString().split(',').map(Number), THREE.SRGBColorSpace));
+    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '0.98,1.09,0.84').toString().split(',').map(Number), THREE.SRGBColorSpace));
     const cen = fit ? [0.5 - (fit.dx || 0) / fit.cpx, ccy + (fit.dy || 0) / fit.cpx] : [0.5, ccy];
-    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78 });
+    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78, shade: pink ? (Q.get('sh') || '0.88,0.6,2.3').split(',').map(Number) : undefined });
     b.position.set(0, cy, 0); grp.add(b); if (Q.has('notree')) b.visible = false; grp.userData.bb = { b, cw: cw * size, ccy, cell, cy: cy * size }; }
   if (false && far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
   grp.rotation.y = R(0, 6.28); scene.add(grp);
