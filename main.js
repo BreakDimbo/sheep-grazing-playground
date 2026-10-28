@@ -225,7 +225,7 @@ function paintGround(){
   g.filter = `blur(${1.5 * s}px)`;
   g.strokeStyle = COL.bank; g.lineWidth = rw * 1.24; smoothPath(g, rv); g.stroke();
   g.strokeStyle = COL.waterEdge; g.lineWidth = rw * 1.02; smoothPath(g, rv); g.stroke();
-  const RB = +(Q.get('rb') || 0.12), RD = +(Q.get('rd') || 0.48), RM = +(Q.get('rm') || 0.78);
+  const RB = +(Q.get('rb') || 0.12), RD = +(Q.get('rd') || 0.44), RM = +(Q.get('rm') || 0.68);
   g.filter = `blur(${rw * RB}px)`;
   g.strokeStyle = '#4f84bb'; g.lineWidth = rw * RM; smoothPath(g, rv); g.stroke();
   g.strokeStyle = COL.waterDeep; g.lineWidth = rw * RD; smoothPath(g, rv); g.stroke();
