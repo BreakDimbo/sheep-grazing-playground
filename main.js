@@ -137,7 +137,7 @@ const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0,
 // ---------- ground painting ----------
 const EF = (k, t) => { const c = LAYOUT.edgeFit && LAYOUT.edgeFit[k]; if (!c) return 0; let r = 0; for (let i = c.length - 1; i >= 0; i--) r = r * t + c[i]; return r; };
 const ED = (k, t) => { const c = LAYOUT.edgeDet && !Q.has('nodet') && LAYOUT.edgeDet[k]; if (!c) return 0; const f = clamp((t + 0.1) / 1.2, 0, 1) * (c.length - 1), i = Math.min(c.length - 2, Math.floor(f)); return lerp(c[i], c[i + 1], f - i); };   // measured edge detail (edet.py)
-const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') ?? -0.12);
+const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') ?? -0.12), EBJ = +(Q.get('ebj') ?? 1);   // EBJ scales the large-scale bay noise
 const river = LAYOUT.river, pathL = LAYOUT.path;
 function paintGround(){
   const cv = document.createElement('canvas'); cv.width = TEXW; cv.height = TEXH;
@@ -293,7 +293,7 @@ function paintGround(){
     const eu = Math.min(l, r), ev = Math.min(t, b); let e = Math.min(eu, ev);
     if (u > 0.5 && v > 0.5 && eu < CR && ev < CR) e = Math.min(e, CR - Math.hypot(CR - eu, CR - ev));   // the reference's worn bottom-right corner
     EK = e === t ? 2 : 0; return e; };
-  const kAt = (x, y, e) => (e + (fbm(x * 0.012 / s, y * 0.012 / s) - 0.5) * 0.55 + (vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5) * 0.12 + EDGE_O) / EDGE_W;
+  const kAt = (x, y, e) => (e + (fbm(x * 0.012 / s, y * 0.012 / s) - 0.5) * 0.55 * EBJ + (vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5) * 0.12 + EDGE_O) / EDGE_W;
   const RBF = +(Q.get('rbf') ?? 1.15), BPL = +(Q.get('bpl') ?? 0), RBP = +(Q.get('rbp') ?? 0.6);                          // river blocks survive more (blue flecks); outer blocks paler
   let cBK = -1, cKB = 0, cTop = false; const band = EBL > 0 ? new Uint8Array(TEXW * TEXH) : null;
   for (let y = 0; y < TEXH; y++){
@@ -303,7 +303,7 @@ function paintGround(){
       if (band && e < EBR) band[y * TEXW + x] = 1;
       const i = (y * TEXW + x) * 4, bl = d[i + 2] - d[i] > 25 ? RKP : 0;
       const n = fbm(x * 0.012 / s, y * 0.012 / s) - 0.5, n2 = vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5;
-      const ee = e + n * 0.55 + n2 * 0.12;                                  // jittered edge distance
+      const ee = e + n * 0.55 * EBJ + n2 * 0.12;                                  // jittered edge distance
       const k = (ee + EDGE_O) / EDGE_W;                                        // 0 = fully paper, 1 = fully paint
       let a;
       if (SOFT){
