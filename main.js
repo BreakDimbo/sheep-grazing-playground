@@ -172,18 +172,18 @@ function paintGround(){
   // ragged paper edge -> alpha (block-dithered, used with alphaTest), with a pale wash toward the rim
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s));
-  const wash = [158, 202, 88];
+  const wash = [166, 204, 104];
   for (let y = 0; y < TEXH; y++){
     const v = y / KV - E;
     for (let x = 0; x < TEXW; x++){
       const u = x / KU - E;
       const eu = Math.min(u, 1 - u) * W, ev = Math.min(v, 1 - v) * D;     // metres from the nominal edge
       const e = Math.min(eu, ev);
-      if (e > 1.3) continue;
+      if (e > 1.6) continue;
       const i = (y * TEXW + x) * 4;
       const n = fbm(x * 0.012 / s, y * 0.012 / s) - 0.5, n2 = vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5;
       const ee = e + n * 0.55 + n2 * 0.12;                                  // jittered edge distance
-      const k = (ee + 0.14) / 0.3;                                         // 0 = fully paper, 1 = fully paint
+      const k = (ee + 0.1) / 0.45;                                        // 0 = fully paper, 1 = fully paint
       let a;
       if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
       d[i + 3] = a ? 255 : 0;
@@ -284,7 +284,7 @@ function makeTree(px, py, wpx, kind){
   // crown is ~1 unit wide; centre height ~0.62 of the width (sits low, trunk hidden)
   const { p, size } = placeByPixel(px, py, wpx * 0.96, sz => sz * 0.5);
   const grp = new THREE.Group(); grp.position.set(p.x, 0, p.z); grp.scale.setScalar(size);
-  const base = new THREE.Color(pink ? 0xf092b2 : 0x80cc46), dark = new THREE.Color(pink ? 0xcc7299 : 0x4f9f33), lite = new THREE.Color(pink ? 0xf9b4c6 : 0xa8e060);
+  const base = new THREE.Color(pink ? 0xf092b2 : 0x80cc46), dark = new THREE.Color(pink ? 0xcc7299 : 0x58a837), lite = new THREE.Color(pink ? 0xf9b4c6 : 0xb2e468);
   const parts = []; const cy = 0.5, rx = 0.42, ry = 0.41;
   parts.push(tint(blob(0.4, 3, 0.1, R(0, 9)).scale(1, ry / 0.42, 1).translate(0, cy, 0), dark));
   const n = pink ? 46 : 34;
@@ -304,29 +304,29 @@ const clouds = [];
 function rayAtPixel(px, py, zPlane){ const v = new THREE.Vector3(px / CAM.img[0] * 2 - 1, -(py / CAM.img[1] * 2 - 1), 0.5).unproject(refCam).sub(refCam.position).normalize();
   const t = (zPlane - refCam.position.z) / v.z; return refCam.position.clone().addScaledVector(v, t); }
 function makeCloud(p, s){
-  const parts = []; const top = new THREE.Color(0xfbf5f0), under = new THREE.Color(0xd2c6e6);
-  const spots = [[0,0.35,0,0.9],[0.55,0.9,0.1,0.7],[-0.35,0.85,-0.1,0.62],[0.1,1.25,0,0.5],[0,0,0,1],[1.1,0.1,0.1,0.82],[-1.05,0.0,-0.05,0.78],[0.45,0.62,0,0.78],[-0.5,0.5,0.1,0.7],[1.85,-0.12,0,0.55],[-1.8,-0.15,0.05,0.52],[0.2,0.05,0.6,0.7],[-0.2,0,-0.6,0.7],[0.95,0.45,-0.3,0.55],[-1.2,0.4,-0.2,0.5]];
+  const parts = []; const top = new THREE.Color(0xf7eee4), under = new THREE.Color(0xc2b4e2);
+  const spots = [[0,0.1,0,0.95],[1.0,0.15,0.1,0.85],[-1.0,0.2,-0.05,0.8],[0.5,0.75,0,0.7],[-0.5,0.7,0.1,0.65],[1.6,0.45,0,0.6],[1.85,-0.15,0,0.55],[-1.75,0.05,0.05,0.55],[0.2,-0.45,0.3,0.55],[-0.7,-0.45,0.2,0.5],[1.1,-0.5,0.25,0.5],[1.5,-0.55,0.1,0.42],[0.6,-0.6,0.35,0.42],[-0.2,0,-0.6,0.7],[1.25,0.8,-0.2,0.45]];
   for (const [px, py, pz, r] of spots){ const g = blob(r, 3, 0.1, R(0, 9)); const pp = g.attributes.position, c = new Float32Array(pp.count * 3);
-    for (let i = 0; i < pp.count; i++){ const yy = (pp.getY(i) + py + 0.55) / 1.5; const col = under.clone().lerp(top, clamp(yy, 0, 1)); c[i*3] = col.r; c[i*3+1] = col.g; c[i*3+2] = col.b; }
+    for (let i = 0; i < pp.count; i++){ const yy = (pp.getY(i) + py + 0.75) / 1.6; const col = under.clone().lerp(top, clamp(yy, 0, 1)); c[i*3] = col.r; c[i*3+1] = col.g; c[i*3+2] = col.b; }
     g.setAttribute('color', new THREE.BufferAttribute(c, 3)); g.translate(px, py, pz); parts.push(g); }
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xf6f0f4, emissiveIntensity: 0.55, transparent: true, depthWrite: false });
-  mat.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vH;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvH = position.y;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vH;').replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a *= smoothstep(-0.75, 0.15, vH);'); };
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xf2e4d4, emissiveIntensity: 0.5, transparent: true, depthWrite: false });
+  mat.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vH; varying float vX;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvH = position.y; vX = position.x;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vH; varying float vX;').replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a *= clamp(0.55 + vX * 0.26 - max(vH - 0.1, 0.0) * 0.5, 0.0, 1.0);'); };
   const m = new THREE.Mesh(mergeGeos(parts), mat);
   const pre = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ colorWrite: false })); pre.renderOrder = 2; m.renderOrder = 3; m.add(pre);
-  m.position.copy(p); m.scale.set(s, s * 0.95, s * 0.8); scene.add(m); clouds.push({ m, p: p.clone(), ph: R(0, 6) });
+  m.position.copy(p); m.scale.set(s, s * 1.2, s * 0.8); scene.add(m); clouds.push({ m, p: p.clone(), ph: R(0, 6) });
 }
 for (const [x, y, w] of LAYOUT.cloudsPx){ const p = rayAtPixel(x, y + w * 0.12, -12.8); makeCloud(p, w * p.distanceTo(refCam.position) / FPX / 4.4); }
 
 // ---------- sheep ----------
-const woolMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x2a241e });
+const woolMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x30271e });
 const faceMat = new THREE.MeshLambertMaterial({ color: 0x2a1e1c });
 const earMat = new THREE.MeshLambertMaterial({ color: 0x2f2420 });
 const pinkMat = new THREE.MeshLambertMaterial({ color: 0xd9978f });
 const legGeo = new THREE.CylinderGeometry(0.045, 0.04, 0.38, 6).translate(0, -0.19, 0);
 const BODY_Y = 0.74, BL = 0.76, BH = 0.45, BW = 0.46;       // wool ellipsoid half-sizes (length, height, width)
 const WOOL_VARIANTS = [0, 1, 2, 3].map(seed => {
-  const parts = []; const cream = new THREE.Color(0xfffaf2), shade = new THREE.Color(0xe4d8d6);
+  const parts = []; const cream = new THREE.Color(0xfff9ef), shade = new THREE.Color(0xe9dbd2);
   const core = blob(1, 3, 0.05, seed).scale(BL * 0.94, BH * 0.94, BW * 0.94).translate(0, BODY_Y, 0); parts.push(tint(core, shade));
   const rr = mulberry(100 + seed);
   for (let i = 0; i < 96; i++){
