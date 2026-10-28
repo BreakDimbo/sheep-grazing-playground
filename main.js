@@ -197,12 +197,15 @@ function paintGround(){
   // hedgerows: soft dark bands
   const hedges = LAYOUT.hedges.map(P); const HW = i => (LAYOUT.hedgeW ? LAYOUT.hedgeW[i] : 1) * +(Q.get('hw') || 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
-  g.save(); g.translate(7 * s, 3 * s); g.filter = `blur(${7 * s}px)`; g.strokeStyle = 'rgba(40,85,25,.22)'; 
-  hedges.forEach((h, i) => { g.lineWidth = 34 * s * HW(i); smoothPath(g, h); g.stroke(); }); g.restore();
-  g.filter = `blur(${4 * s}px)`; g.strokeStyle = 'rgba(52,100,30,.35)'; 
-  hedges.forEach((h, i) => { g.lineWidth = 29 * s * HW(i); smoothPath(g, h); g.stroke(); });
-  g.filter = `blur(${1.6 * s}px)`; g.strokeStyle = COL.hedge; 
-  hedges.forEach((h, i) => { g.lineWidth = 22 * s * HW(i); smoothPath(g, h); g.stroke(); });
+  const HF = +(Q.get('hf') ?? 1), HA = +(Q.get('ha') ?? 0.6), HC = +(Q.get('hc') ?? 1.0), HB = +(Q.get('hb') ?? 0.6), HWB = +(Q.get('hwb') ?? 0.35);
+  g.save(); g.translate(7 * s, 3 * s); g.filter = `blur(${7 * s * HF}px)`; g.strokeStyle = `rgba(40,85,25,${.22 * HA})`; 
+  hedges.forEach((h, i) => { g.lineWidth = 34 * s * HW(i) * HF; smoothPath(g, h); g.stroke(); }); g.restore();
+  g.filter = `blur(${4 * s * HF}px)`; g.strokeStyle = `rgba(52,100,30,${.35 * HA})`; 
+  hedges.forEach((h, i) => { g.lineWidth = 29 * s * HW(i) * (HF + 2) / 3; smoothPath(g, h); g.stroke(); });
+  g.filter = `blur(${1.6 * s * HB}px)`; g.strokeStyle = COL.hedge; 
+  hedges.forEach((h, i) => { g.lineWidth = 22 * s * HW(i) * HC; smoothPath(g, h); g.stroke(); });
+  if (HWB > 0){ g.filter = 'none'; g.fillStyle = COL.hedge; hedges.forEach((h, i) => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (2 * s));
+    for (let j = 0; j < n; j++){ const t = j / n, x = lerp(x0, x1, t), y = lerp(y0, y1, t); const r = 11 * s * HW(i) * HC * (1 + HWB * (vnoise(x * 0.02 / s + i * 7, y * 0.02 / s) - 0.5) * 2) ; if (r > 0){ g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); } } } }); }
   g.filter = 'none';
   hedges.forEach(h => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.hypot(x1 - x0, y1 - y0) / (3 * s);
     for (let j = 0; j < n; j++){ const t = rand(); g.fillStyle = rand() < .5 ? 'rgba(35,80,20,.28)' : 'rgba(95,150,55,.22)'; g.beginPath(); g.arc(lerp(x0, x1, t) + R(-7, 7) * s, lerp(y0, y1, t) + R(-7, 7) * s, R(1, 2.2) * s, 0, 7); g.fill(); } } });
