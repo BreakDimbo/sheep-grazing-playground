@@ -133,7 +133,7 @@ const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0,
 
 // ---------- ground painting ----------
 const EF = (k, t) => { const c = LAYOUT.edgeFit && LAYOUT.edgeFit[k]; if (!c) return 0; let r = 0; for (let i = c.length - 1; i >= 0; i--) r = r * t + c[i]; return r; };
-const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') || 0.1);
+const EDGE_W = +(Q.get('ew') || 0.45), EDGE_O = +(Q.get('eo') ?? 0.02);
 const river = LAYOUT.river, pathL = LAYOUT.path;
 function paintGround(){
   const cv = document.createElement('canvas'); cv.width = TEXW; cv.height = TEXH;
@@ -237,6 +237,7 @@ function paintGround(){
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s * +(Q.get('eb') || 1)));
   const wash = [166, 204, 104], CR = 2.6;
+  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 1), PC = (Q.get('pc') || '228,221,208').split(',').map(Number);
   for (let y = 0; y < TEXH; y++){
     const v = y / KV - E;
     for (let x = 0; x < TEXW; x++){
@@ -250,7 +251,12 @@ function paintGround(){
       const ee = e + n * 0.55 + n2 * 0.12;                                  // jittered edge distance
       const k = (ee + EDGE_O) / EDGE_W;                                        // 0 = fully paper, 1 = fully paint
       let a;
-      if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
+      if (SOFT){
+        const kk = k + (vnoise(x * 0.35 / s, y * 0.35 / s) - 0.5) * SG;          // dry-brush grain
+        const t = clamp(kk, 0, 1), sm = Math.pow(t * t * (3 - 2 * t), SP);
+        a = kk > -0.05 ? 1 : 0;
+        if (a && sm < 1){ d[i] = lerp(PC[0], d[i], sm); d[i + 1] = lerp(PC[1], d[i + 1], sm); d[i + 2] = lerp(PC[2], d[i + 2], sm); }
+      } else if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
       d[i + 3] = a ? 255 : 0;
       const f = clamp(1 - (ee - 0.05) / 0.9, 0, 1) * 0.55;
       if (f > 0){ d[i] = lerp(d[i], wash[0], f); d[i + 1] = lerp(d[i + 1], wash[1], f); d[i + 2] = lerp(d[i + 2], wash[2], f); }
