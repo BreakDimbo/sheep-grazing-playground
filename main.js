@@ -211,12 +211,12 @@ function paintGround(){
   const dg = new Float32Array(FW * FH); for (let i = 0; i < fl.length; i += 3) dg[fl[i+1] * FW + fl[i]] = fl[i+2] / 100;
   const dgs = new Float32Array(FW * FH), RR = 3;                 // box-blur the measured density so dots sprinkle evenly
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){ let t = 0, c = 0; for (let j = -RR; j <= RR; j++) for (let i = -RR; i <= RR; i++){ const xx = x + i, yy = y + j; if (xx < 0 || yy < 0 || xx >= FW || yy >= FH) continue; t += dg[yy * FW + xx]; c++; } dgs[y * FW + x] = t / c; }
-  const cellW = TEXW / FW, cellH = TEXH / FH;
+  const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 1), FWH = +(Q.get('fw') ?? 0.05);
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){
-    const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64; let n = Math.floor(dens); if (rand() < dens - n) n++;
+    const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64 * FD; let n = Math.floor(dens); if (rand() < dens - n) n++;
     for (let k = 0; k < n; k++){
       const px = (x + rand()) * cellW, py = (y + rand()) * cellH; if (inPoly(px, py, wheat)) continue;
-      const t = rand(); g.fillStyle = t < 0.45 ? '#f3c544' : t < 0.75 ? '#ec9535' : '#fbf3df';
+      const t = rand(); g.fillStyle = t < 1 - FWH - 0.3 ? '#f3c544' : t < 1 - FWH ? '#ec9535' : '#fbf3df';
       g.beginPath(); g.arc(px, py, R(1.3, 2.1) * s * +(Q.get('fs') || 1), 0, 7); g.fill();
     }
   }
