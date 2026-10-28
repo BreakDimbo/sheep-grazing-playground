@@ -294,6 +294,7 @@ function paintGround(){
     if (u > 0.5 && v > 0.5 && eu < CR && ev < CR) e = Math.min(e, CR - Math.hypot(CR - eu, CR - ev));   // the reference's worn bottom-right corner
     EK = e === t ? 2 : 0; return e; };
   const kAt = (x, y, e) => (e + (fbm(x * 0.012 / s, y * 0.012 / s) - 0.5) * 0.55 + (vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5) * 0.12 + EDGE_O) / EDGE_W;
+  const RBF = +(Q.get('rbf') ?? 1.15), BPL = +(Q.get('bpl') ?? 0), RBP = +(Q.get('rbp') ?? 0.6);                          // river blocks survive more (blue flecks); outer blocks paler
   let cBK = -1, cKB = 0, cTop = false; const band = EBL > 0 ? new Uint8Array(TEXW * TEXH) : null;
   for (let y = 0; y < TEXH; y++){
     for (let x = 0; x < TEXW; x++){
@@ -313,8 +314,8 @@ function paintGround(){
         let kf = kk, FKs = FK * (top ? FKT : 1);
         if (EMD){                                                                // block dissolve: each block is paint or paper, paint odds ramp across the edge zone
           const key = hy * 100000 + hx; if (key !== cBK){ cBK = key; const cx = (hx + 0.5) * fb, cy = (hy + 0.5) * fb * FA, eb = eAt(cx, cy); cTop = EK === 2; cKB = kAt(cx, cy, eb); }
-          const FKb = FK * (cTop ? FKT : 1); let p = clamp((cKB + FKb) / (FKb + HZ), 0, 1); p = Math.pow(p, PW) * (0.7 + 0.6 * vnoise(hx * 0.4, hy * 0.4));
-          if (cKB >= HZ) a = 1; else { a = hash2(hx + 7, hy + 3) < p ? 1 : 0; if (a){ const c = clamp(CM0 + (1 - CM0) * p + (hash2(hx, hy + 11) - 0.5) * FV, 0, 1) + (1 - CM0) * bl * 0; const cc = c + (1 - c) * bl; d[i] = lerp(PC[0], d[i], cc); d[i + 1] = lerp(PC[1], d[i + 1], cc); d[i + 2] = lerp(PC[2], d[i + 2], cc); } }
+          const FKb = FK * (cTop ? FKT : 1); let p = clamp((cKB + FKb) / (FKb + HZ), 0, 1); p = Math.pow(p, PW) * (0.7 + 0.6 * vnoise(hx * 0.4, hy * 0.4)); if (bl) p = Math.min(1, p * RBF);
+          if (cKB >= HZ) a = 1; else { a = hash2(hx + 7, hy + 3) < p ? 1 : 0; if (a){ const c = clamp((CM0 + (1 - CM0) * p + (hash2(hx, hy + 11) - 0.5) * FV) * (1 - BPL * (1 - p)), 0, 1) + (1 - CM0) * bl * 0; const cc = bl ? 1 - RBP * (1 - p) : c; d[i] = lerp(PC[0], d[i], cc); d[i + 1] = lerp(PC[1], d[i + 1], cc); d[i + 2] = lerp(PC[2], d[i + 2], cc); } }
           if (a && sm < 1){ let sf = EF0 + (1 - EF0) * sm; sf += (1 - sf) * bl; d[i] = lerp(PC[0], d[i], sf); d[i + 1] = lerp(PC[1], d[i + 1], sf); d[i + 2] = lerp(PC[2], d[i + 2], sf); }
         } else {
         if (!a && FSQ){ const key = hy * 100000 + hx; if (key !== cBK){ cBK = key; const cx = (hx + 0.5) * fb, cy = (hy + 0.5) * fb * FA, eb = eAt(cx, cy); cTop = EK === 2; cKB = kAt(cx, cy, eb); } kf = cKB; FKs = FK * (cTop ? FKT : 1); }   // whole square blocks
