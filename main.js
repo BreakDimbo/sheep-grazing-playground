@@ -434,7 +434,7 @@ const trees = [];
 const TREE_K = +(Q.get('tk') || 1.0);
 function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
   const pink = kind === 'p';
-  if (fit){ fit = { ...fit }; if (pink){ fit.cell = +(Q.get('pcl') ?? 24); fit.s *= +(Q.get('pks') ?? 0.93); fit.dy += +(Q.get('pdy') ?? 0); fit.dx += +(Q.get('pdx') ?? 0); } cell = fit.cell; tk *= fit.s; }
+  if (fit){ fit = { ...fit }; if (pink){ fit.cell = +(Q.get('pcl') ?? 28); fit.s *= +(Q.get('pks') ?? 0.93); fit.dy += +(Q.get('pdy') ?? 0); fit.dx += +(Q.get('pdx') ?? 0); } cell = fit.cell; tk *= fit.s; }
   // crown is ~1 unit wide; centre height ~0.62 of the width (sits low, trunk hidden)
   const far = py < 300, cy = far ? 0.54 : 0.5;
   const { p, size } = placeByPixel(px, py, wpx * 0.96, sz => sz * cy);
@@ -452,7 +452,7 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
     const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
     const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
     const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (!pink) tc.multiplyScalar(+(Q.get('tgb') ?? 1.08)); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
-    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '1.04,1.2,0.82').toString().split(',').map(Number), THREE.SRGBColorSpace));
+    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '1.21,1.43,0.9').toString().split(',').map(Number), THREE.SRGBColorSpace));
     const cen = fit ? [0.5 - (fit.dx || 0) / fit.cpx, ccy + (fit.dy || 0) / fit.cpx] : [0.5, ccy];
     const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, solid: pink ? 0 : +(Q.get('tso') ?? 0.4), sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78, shade: pink ? (Q.get('sh') || '0.88,0.6,2.3').split(',').map(Number) : undefined });
     b.position.set(0, cy, 0); grp.add(b); if (Q.has('notree')) b.visible = false; grp.userData.bb = { b, cw: cw * size, ccy, cell, cy: cy * size }; }
