@@ -162,7 +162,7 @@ function paintGround(){
   paintTile(g, IMG_WHEAT, s, TILE_A);
   g.restore();
   // grass: fine short vertical ticks
-  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.2), GM = +(Q.get("gm") ?? 0), GL = +(Q.get("gl") ?? 0.6), GWD = +(Q.get("gw") ?? 0.8), GK = +(Q.get("gk") ?? 1.8), GDK = +(Q.get("gdk") ?? 0.5);
+  const N = (MOBILE ? 120000 : 220000) * s * s * +(Q.get("gt") ?? 0.12), GM = +(Q.get("gm") ?? 0), GL = +(Q.get("gl") ?? 0.6), GWD = +(Q.get("gw") ?? 0.8), GK = +(Q.get("gk") ?? 1.8), GDK = +(Q.get("gdk") ?? 0.5);
   for (let i = 0; i < N; i++){
     const x = R(0, TEXW), y = R(0, TEXH);
     const l = R(3, 8) * s, t = rand();
@@ -174,6 +174,16 @@ function paintGround(){
     const pc = document.createElement('canvas'); pc.width = TEXW; pc.height = TEXH; const p = pc.getContext('2d');
     for (let i = 0; i < NP; i++){ const x = R(0, TEXW), y = R(0, TEXH); p.fillStyle = `rgba(205,238,150,${(R(.12, .3) * GPA).toFixed(3)})`; p.beginPath(); p.ellipse(x, y, R(1.4, 2.6) * s * GPR, R(2.2, 3.8) * s * GPR, 0, 0, 7); p.fill(); }
     g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); g.filter = `blur(${0.8 * s}px)`; g.drawImage(pc, 0, 0); g.filter = 'none'; g.restore(); } }
+
+  { const TU = +(Q.get('tu') ?? 0.7); if (TU > 0){                                   // sparse dark grass tufts (2-3 fanned strokes), own PRNG so later content is unchanged
+    let sd = 9127; const r2 = () => { sd = (sd + 0x6D2B79F5) | 0; let t = Math.imul(sd ^ (sd >>> 15), 1 | sd); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const NT = 9000 * s * s * TU, TA = +(Q.get('ta') ?? 0.55), TL = +(Q.get('tl') ?? 1.4), TK = +(Q.get('tuk') ?? 0.5), TF = +(Q.get('tf') ?? 0.25), TW = +(Q.get('tw') ?? 1);
+    g.save(); polyPath(g, wheat); g.rect(TEXW, 0, -TEXW, TEXH); g.clip('evenodd'); g.lineCap = 'round';
+    for (let i = 0; i < NT; i++){ const x = r2() * TEXW, y = r2() * TEXH, k = 1 + (r2() < TK ? 1 : 0), dark = r2() < 0.85;
+      g.strokeStyle = dark ? `rgba(58,108,28,${(TA * (0.6 + 0.4 * r2())).toFixed(3)})` : `rgba(200,232,130,${(TA * 0.8).toFixed(3)})`; g.lineWidth = (0.7 + 0.4 * r2()) * s * TW;
+      for (let j = 0; j < k; j++){ const a = -Math.PI / 2 + (j - (k - 1) / 2) * TF + (r2() - 0.5) * 0.25, l = (3 + 4 * r2()) * s * TL;
+        g.beginPath(); g.moveTo(x + (j - 1) * 0.8 * s, y); g.lineTo(x + (j - 1) * 0.8 * s + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); } }
+    g.restore(); } }
 
   // fitted low-frequency colour correction per field (quadratic in board uv; see fieldfit.py)
   if (LAYOUT.fieldFix && !Q.has('nofix')){
@@ -218,9 +228,9 @@ function paintGround(){
   // flowers, placed with the density measured from the reference
   const [FW, FH] = LAYOUT.flowerGrid, fl = LAYOUT.flowers;
   const dg = new Float32Array(FW * FH); for (let i = 0; i < fl.length; i += 3) dg[fl[i+1] * FW + fl[i]] = fl[i+2] / 100;
-  const dgs = new Float32Array(FW * FH), RR = +(Q.get('fr') ?? 7);                 // box-blur the measured density so dots sprinkle evenly
+  const dgs = new Float32Array(FW * FH), RR = +(Q.get('fr') ?? 4);                 // box-blur the measured density so dots sprinkle evenly
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){ let t = 0, c = 0; for (let j = -RR; j <= RR; j++) for (let i = -RR; i <= RR; i++){ const xx = x + i, yy = y + j; if (xx < 0 || yy < 0 || xx >= FW || yy >= FH) continue; t += dg[yy * FW + xx]; c++; } dgs[y * FW + x] = t / c; }
-  const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 0.9), FWH = +(Q.get('fw') ?? 0.03), FWT = +(Q.get('fwt') ?? 0), FOR = +(Q.get('fo') ?? 0.1), FYC = '#' + (Q.get('fy') || 'd9c455'), FOC = '#' + (Q.get('fc') || 'e3a24a');
+  const cellW = TEXW / FW, cellH = TEXH / FH, FD = +(Q.get('fd') ?? 1.2), FWH = +(Q.get('fw') ?? 0.015), FWT = +(Q.get('fwt') ?? 0), FOR = +(Q.get('fo') ?? 0.1), FYC = '#' + (Q.get('fy') || 'd9c455'), FOC = '#' + (Q.get('fc') || 'e3a24a');
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++){
     const dens = Math.min(0.5, dgs[y * FW + x]) * 30 * (cellW * cellH) / 64 * FD; let n = Math.floor(dens); if (rand() < dens - n) n++;
     for (let k = 0; k < n; k++){
