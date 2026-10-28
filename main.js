@@ -102,7 +102,7 @@ function paintGround(){
   g.fillStyle = COL.light; g.fillRect(0, 0, TEXW, TEXH);
   g.filter = `blur(${5 * s}px)`;
   g.fillStyle = COL.bright; polyPath(g, P(LAYOUT.bright)); g.fill();
-  g.filter = `blur(${14 * s}px)`;
+  g.filter = `blur(${8 * s}px)`;
   g.fillStyle = COL.dark; polyPath(g, P(LAYOUT.dark)); g.fill();
   g.filter = 'none';
   // gentle pigment pooling
@@ -256,7 +256,7 @@ function riverDist(x, z){ let best = 1e9; for (let i = 0; i < riverPts.length; i
         float edge=smoothstep(0.,.22,x)*smoothstep(1.,.78,x);
         float ends=smoothstep(0.3,1.5,s)*smoothstep(uLen-0.3,uLen-1.5,s);
         float st=smoothstep(.74,.9,n(vec2(x*5.,s*1.1-uTime*.45)));
-        float a=st*.22*edge*ends;
+        float a=st*.13*edge*ends;
         gl_FragColor=vec4(vec3(.86,.93,1.),a);
         #include <colorspace_fragment>
       }` });
@@ -286,7 +286,7 @@ function makeTree(px, py, wpx, kind){
   const far = py < 300, cy = far ? 0.54 : 0.5;
   const { p, size } = placeByPixel(px, py, wpx * 0.96, sz => sz * cy);
   const grp = new THREE.Group(); grp.position.set(p.x, 0, p.z); grp.scale.setScalar(size);
-  const base = new THREE.Color(pink ? 0xf092b2 : 0x80cc46), dark = new THREE.Color(pink ? 0xcc7299 : 0x58a837), lite = new THREE.Color(pink ? 0xf9b4c6 : 0xb2e468);
+  const base = new THREE.Color(pink ? 0xe485b4 : 0x80cc46), dark = new THREE.Color(pink ? 0xb85e98 : 0x58a837), lite = new THREE.Color(pink ? 0xf4a8cc : 0xb2e468);
   const parts = []; const rx = 0.42, ry = 0.41;
   parts.push(tint(blob(0.4, 3, 0.1, R(0, 9)).scale(1, ry / 0.42, 1).translate(0, cy, 0), dark));
   const n = pink ? 46 : 34;
