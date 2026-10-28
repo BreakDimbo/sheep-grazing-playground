@@ -206,7 +206,7 @@ function paintGround(){
     g.putImageData(im, 0, 0);
   }
   // faint broad brush streaks across the fields (own PRNG so the rest of the board is unchanged)
-  const BST = +(Q.get('bst') ?? 0.05), BSN = +(Q.get('bsn') ?? 260), BSA = +(Q.get('bsa') ?? -0.35), BSJ = +(Q.get('bsj') ?? 0.5);
+  const BST = +(Q.get('bst') ?? 0.07), BSN = +(Q.get('bsn') ?? 260), BSA = +(Q.get('bsa') ?? -0.35), BSJ = +(Q.get('bsj') ?? 0.25);
   if (BST > 0){ const br = mulberry(+(Q.get('bseed') ?? 53)); g.save(); g.lineCap = 'round'; g.filter = `blur(${5 * s}px)`;
     for (let k = 0; k < BSN; k++){ const x = br() * TEXW, y = br() * TEXH, L = (120 + 220 * br()) * s, an = BSA + (br() - .5) * BSJ, lt = br() < .5;
       g.strokeStyle = lt ? `rgba(235,240,170,${BST})` : `rgba(40,90,20,${BST * .8})`; g.lineWidth = (14 + 22 * br()) * s;
