@@ -371,8 +371,9 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
     const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
     const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
     const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
+    if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '1.07,1.17,0.95').toString().split(',').map(Number), THREE.SRGBColorSpace));
     const cen = fit ? [0.5 - (fit.dx || 0) / fit.cpx, ccy + (fit.dy || 0) / fit.cpx] : [0.5, ccy];
-    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, sat: pink ? 0.95 : 0.78 });
+    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78 });
     b.position.set(0, cy, 0); grp.add(b); if (Q.has('notree')) b.visible = false; grp.userData.bb = { b, cw: cw * size, ccy, cell, cy: cy * size }; }
   if (false && far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
   grp.rotation.y = R(0, 6.28); scene.add(grp);
