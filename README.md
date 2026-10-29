@@ -20,3 +20,7 @@ Plain ES modules + [three.js](https://threejs.org) r170 (MIT, vendored in `vendo
 (fields, hedgerows, river, path, wheat, pencil-tick grass, wildflowers, dithered paper-bleed edge) traced from the reference via a
 homography; grazing writes into a wear map that slowly regrows. Sheep run a small state machine (graze → idle → walk → …) with
 separation, river/tree/edge avoidance and a preference for lush, uncrowded grass.
+
+## Plus edition sound
+
+The plus edition's sheep, lamb, skylark and cricket recordings come from Wikimedia Commons (public domain, CC BY-SA 3.0/4.0), by earthcalling, Yosef Ben Melamed, Marie-Lan Taÿ Pamart and Thatcher. Sources, licences and changes are listed in [docs/sound.md](docs/sound.md). Wind and pencil sounds are generated.

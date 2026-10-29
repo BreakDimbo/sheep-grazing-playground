@@ -80,3 +80,4 @@ import('./wind.js').catch(e => console.warn('wind', e));
 import('./flock.js').catch(e => console.warn('flock', e));
 import('./night.js').catch(e => console.warn('night', e));
 import('./camera.js').catch(e => console.warn('camera', e));
+import('./sound.js').catch(e => console.warn('sound', e));
