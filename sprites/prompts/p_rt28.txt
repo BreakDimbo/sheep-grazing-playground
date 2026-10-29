@@ -1,0 +1,16 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, same canvas size and framing), then copy the resulting PNG to /workspace/sheep/gen/edit_c28.png. Do not post-process it.
+
+Attached images:
+1. Our own cartoon tree sprite on flat magenta (#FF00FF). This is the image to edit.
+2. Keep the crown outline and size of image 1 (it may become slightly more irregular and lumpy at the top). Keep the trunk where image 1 has it.
+3. A loose shading/style reference only (do not copy it).
+
+Most important: the crown must be clearly DARKER and more strongly shaded than image 1.
+- Overall colour a medium-dark blossom pink: mid tone #e58fae.
+- Light from the upper LEFT only. Only the upper-left lobes get a soft yellow-green highlight (#f8c8d6).
+- The RIGHT half and the lower part of the crown are in deep shade (#b85a80), the far right edge darkest (#9a4468).
+- DEEP, DARK creases between the lobes (#8a3a5c), clearly visible, especially on the shaded right side, so each lobe reads as a separate soft clay form.
+- Lobes of mixed sizes (a few large, several medium), overlapping irregularly, NOT an even grid of round balls.
+- Matte, smooth, soft clay, no outlines, no specular glints, no noise.
+- Trunk plain dark brown (#4a3326).
+- Background perfectly flat uniform pure magenta #FF00FF, no shadow, no ground, no text.
