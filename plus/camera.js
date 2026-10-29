@@ -71,7 +71,7 @@ void main(){
       acc += (texture2D(uSrc, vUv + o) + texture2D(uSrc, vUv - o)) * k; w += 2. * k; }
     c = acc / w; }
   // night: the eye's rods take over, colour drains toward a cool grey (linear in premultiplied rgb, so alpha stays right)
-  if (uNight > 0.){ float ys = dot(c.rgb, vec3(.12, .52, .36)); c.rgb = mix(c.rgb, ys * vec3(.76, .91, 1.27), uNight * .62) * (1. - uNight * .28); }
+  if (uNight > 0.){ float ys = dot(c.rgb, vec3(.12, .52, .36)); c.rgb = mix(c.rgb, ys * vec3(.70, .88, 1.38), uNight * .66) * (1. - uNight * .28); }
   gl_FragColor = c;
 }`;
 const VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;

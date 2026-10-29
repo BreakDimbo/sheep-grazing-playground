@@ -15,23 +15,19 @@ const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, ble
     vec2 grad(vec2 p){ float e = .5, c = n(p); return vec2(n(p + vec2(e, 0)) - c, n(p + vec2(0, e)) - c) / e; }
     void main(){
       vec2 p = vW.xz; float t = uT;
-      // slopes: a few travelling wavelets (downstream-ish, a little wind chop) + fine noise; rms slope ~0.03, mostly irregular
+      // slopes: slow irregular swell from warped noise, no fine chop
       vec2 s = vec2(0.);
-      vec2 d1 = normalize(vec2(.3, 1.)), d2 = normalize(vec2(-.8, .6)), d3 = normalize(vec2(1., -.2)), d4 = normalize(vec2(-.2, -1.));
-      s += d1 * .014 * cos(dot(p, d1) * 21. - t * 3.1);
-      s += d2 * .012 * cos(dot(p, d2) * 29. - t * 3.7 + 1.3);
-      s += d3 * .009 * cos(dot(p, d3) * 41. - t * 4.6 + 2.1);
-      s += d4 * .008 * cos(dot(p, d4) * 53. - t * 5.3 + .4);
-      s += (grad(p * 9. + vec2(0., t * .8)) - .0) * .03 + (grad(p * 23. - vec2(t * .6, 0.))) * .018;
+      // calm water: long slow swells only (0.3-0.8 m), so the moon lies on it as a soft broken column, not sparkles
+      vec2 q = p + vec2(n(p * .9 + t * .05), n(p * .9 + 7.3 - t * .04)) * .8;          // warped, so the swell is irregular
+      s += (grad(q * 2.0 + vec2(0., t * .16)) - .5) * .045 + (grad(q * 4.3 - vec2(t * .12, 0.)) - .5) * .022;
       vec3 N = normalize(vec3(-s.x, 1., -s.y));
       vec3 V = normalize(cameraPosition - vW), R = reflect(-V, N);
       float c = dot(R, uMoon);
-      float g = smoothstep(.99935, .99985, c);                         // within ~2-5 degrees of the moon's disc
+      float g = exp(-(1. - c) / .0016);                                // soft lobe, ~3 degrees: the moon's mirror image smeared by the swell
       float F = .02 + .98 * pow(1. - max(dot(V, N), 0.), 5.);           // Fresnel for water
       float x = vUv.x, edge = smoothstep(0., .18, x) * smoothstep(1., .82, x), ends = smoothstep(.3, 1.5, vUv.y) * smoothstep(uLen - .3, uLen - 1.5, vUv.y);
       vec4 gt = texture2D(uG, vT); float wet = step(.5, gt.a) * smoothstep(.04, .14, gt.b - gt.r);
-      float chop = smoothstep(.35, .75, n(p * .7 + vec2(t * .05, 0.)));      // ripples come and go in patches
-      float I = g * F * 2.2 * (.35 + .65 * chop) * uK * edge * ends * wet;
+      float I = g * F * .85 * uK * edge * ends * wet;
       gl_FragColor = vec4(vec3(.80, .86, .95) * min(I, 1.), 0.);
       #include <colorspace_fragment>
     }` });
