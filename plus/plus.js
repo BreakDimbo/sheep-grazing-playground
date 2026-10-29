@@ -45,7 +45,7 @@ function apply(h){
   sun.color.setRGB(lc.x * PI, lc.y * PI, lc.z * PI, THREE.LinearSRGBColorSpace);
   hemi.color.setRGB(sky.x * PI, sky.y * PI, sky.z * PI, THREE.LinearSRGBColorSpace); hemi.groundColor.setRGB(gnd.x * PI, gnd.y * PI, gnd.z * PI, THREE.LinearSRGBColorSpace);
   // painted sprites carry their own baked shading: grade them by the light the ground under them receives
-  const irr = sky.clone().add(lc.clone().multiplyScalar(Math.max(ld.y, 0) / SUNCOS));
+  const irr = sky.clone().add(lc.clone().multiplyScalar(Math.max(ld.y, 0)));
   GRADE.value.copy(irr).multiplyScalar(0.92).addScalar(0.08 * (irr.x + irr.y + irr.z) / 3);
   // clouds sit high and catch the low sun sideways, so they stay lit (and turn rose) after the fields fall into shadow
   const cl = sky.clone().multiplyScalar(1.15).add(sc.clone().multiplyScalar(Math.max(0, THREE.MathUtils.smoothstep(d.y, -0.06, 0.05)) * 0.6 / 0.78));
