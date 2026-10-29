@@ -1,0 +1,9 @@
+Use your built-in image generation tool (default settings) to create ONE image, then copy the resulting PNG to /workspace/sheep/gen/green4.png. Do not edit it.
+
+The attached image is only a loose STYLE reference (do not copy it): a soft toy-like 3D-rendered cartoon tree crown in a miniature diorama, seen from above at about 35 degrees.
+
+Image content: a sprite sheet of 4 separate cartoon tree crowns in a strict 2 columns x 2 rows grid, evenly spaced, each centred in its cell, similar size, nothing overlapping, generous gaps. Background: perfectly flat uniform pure magenta (#FF00FF), no gradient, no ground, no shadows on the background, no text.
+Each crown is ONE compact soft rounded mass of fresh green clay, about as wide as tall, made of roughly 10-14 LARGE smooth round lobes (like soft balls pressed together), so the silhouette is a ROUNDED, gently scalloped outline with a few big smooth bumps, not lumpy and not broccoli-like. Lobe surfaces are very smooth and matte like soft clay, with soft rounded shading on each lobe.
+Lighting: one soft light from the upper LEFT: upper-left lobes yellow-green highlight, lower-right third in deeper green shade, soft darker creases between lobes.
+Cells 1-2: bright lime-green (highlight #9ad656, mid #6bb53a, shade #3f8a2a). Cells 3-4: darker, deeper green (highlight #6fae3e, mid #4a8f2c, shade #2c6420).
+NO trunk at all, nothing below the crown.

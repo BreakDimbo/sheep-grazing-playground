@@ -469,7 +469,8 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
   trees.push({ grp, crown, x: p.x, z: p.z, r: size * 0.5, phase: R(0, 6) });
 }
 const TREE_CELLS = [0, 2, 3, 1, 6, 2, 1], TREE_SCALE = [1, 1, 1, 1, 1, 1, 1.18], TREE_TINT = [0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xeac4e6, 0xd8e4c8, 0xd8e4c8];
-LAYOUT.treesPx.forEach(([x, y, w, k], i) => makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i], LAYOUT.treesFit ? LAYOUT.treesFit[i] : null));
+const GCL = (Q.get('gcl') ?? LAYOUT.greenCells ?? '').toString().split(',');                   // per-tree atlas cell override (smooth-lobe crowns, cells 32-35)
+LAYOUT.treesPx.forEach(([x, y, w, k], i) => { let f = LAYOUT.treesFit ? LAYOUT.treesFit[i] : null; if (f && GCL[i] !== undefined && GCL[i] !== '' && +GCL[i] >= 0) f = { ...f, cell: +GCL[i] }; makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i], f); });
 
 // ---------- clouds (placed on the rays of the reference pixels) ----------
 const clouds = [];
