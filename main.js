@@ -218,6 +218,8 @@ function paintGround(){
   const hedges = LAYOUT.hedges.map(P); const HW = i => (LAYOUT.hedgeW ? LAYOUT.hedgeW[i] : 1) * +(Q.get('hw') || 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
   const HF = +(Q.get('hf') ?? 1), HA = +(Q.get('ha') ?? 0.6), HC = +(Q.get('hc') ?? 1.1), HB = +(Q.get('hb') ?? 0.8), HWB = +(Q.get('hwb') ?? 0.35);
+  const HDB = +(Q.get('hdb') ?? 2.5);                                                 // soft hedge edges (dabs on an offscreen layer, one blur)
+  const HSG = Q.has('nohseg') ? null : LAYOUT.hedgeSeg;                                 // per-vertex width fitted from the ref (hedgeseg.py)
   const HTP = +(Q.get('htp') ?? 2), HLA = +(Q.get('hla') ?? 0), HLW = +(Q.get('hlw') ?? 1.6);   // tapered ends (length in core widths), pale halo alpha / width
   const hLen = hedges.map(h => { const c = [0]; for (let k = 1; k < h.length; k++) c.push(c[k-1] + Math.hypot(h[k][0] - h[k-1][0], h[k][1] - h[k-1][1])); return c; });
   if (HLA > 0){ g.filter = `blur(${10 * s}px)`; g.strokeStyle = `rgba(214,226,140,${HLA})`; hedges.forEach((h, i) => { g.lineWidth = 34 * s * HW(i) * HLW; smoothPath(g, h); g.stroke(); }); }
@@ -227,8 +229,8 @@ function paintGround(){
   hedges.forEach((h, i) => { g.lineWidth = 29 * s * HW(i) * (HF + 2) / 3; smoothPath(g, h); g.stroke(); });
   g.filter = `blur(${1.6 * s * HB}px)`; g.strokeStyle = COL.hedge; 
   if (!(HTP > 0 && HWB > 0)) hedges.forEach((h, i) => { g.lineWidth = 22 * s * HW(i) * HC; smoothPath(g, h); g.stroke(); });
-  if (HWB > 0){ g.filter = 'none'; g.fillStyle = COL.hedge; hedges.forEach((h, i) => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (2 * s));
-    for (let j = 0; j < n; j++){ const t = j / n, x = lerp(x0, x1, t), y = lerp(y0, y1, t), L = hLen[i], ds = Math.min(lerp(L[k], L[k+1], t), L[L.length-1] - lerp(L[k], L[k+1], t)); const tp = HTP > 0 ? Math.sqrt(Math.min(1, ds / (HTP * 22 * s * HW(i)))) : 1; const r = tp * 11 * s * HW(i) * HC * (1 + HWB * (vnoise(x * 0.02 / s + i * 7, y * 0.02 / s) - 0.5) * 2) ; if (r > 0){ g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); } } } }); }
+  if (HWB > 0){ const hc = HDB > 0 ? document.createElement('canvas') : null, g0 = g; if (hc){ hc.width = TEXW; hc.height = TEXH; } { const g = hc ? hc.getContext('2d') : g0; g.filter = 'none'; g.fillStyle = COL.hedge; hedges.forEach((h, i) => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (2 * s));
+    for (let j = 0; j < n; j++){ const t = j / n, x = lerp(x0, x1, t), y = lerp(y0, y1, t), L = hLen[i], ds = Math.min(lerp(L[k], L[k+1], t), L[L.length-1] - lerp(L[k], L[k+1], t)); const tp = HTP > 0 ? Math.sqrt(Math.min(1, ds / (HTP * 22 * s * HW(i)))) : 1; const SG = HSG ? lerp(HSG[i][k], HSG[i][k+1], t) : 1, r = tp * 11 * s * HW(i) * SG * HC * (1 + HWB * (vnoise(x * 0.02 / s + i * 7, y * 0.02 / s) - 0.5) * 2) ; if (r > 0){ g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); } } } }); } if (hc){ g0.filter = `blur(${HDB * s}px)`; g0.drawImage(hc, 0, 0); } }
   g.filter = 'none';
   hedges.forEach(h => { for (let k = 0; k < h.length - 1; k++){ const [x0, y0] = h[k], [x1, y1] = h[k+1]; const n = Math.hypot(x1 - x0, y1 - y0) / (3 * s);
     for (let j = 0; j < n; j++){ const t = rand(); g.fillStyle = rand() < .5 ? 'rgba(35,80,20,.28)' : 'rgba(95,150,55,.22)'; g.beginPath(); g.arc(lerp(x0, x1, t) + R(-7, 7) * s, lerp(y0, y1, t) + R(-7, 7) * s, R(1, 2.2) * s, 0, 7); g.fill(); } } });

@@ -49,3 +49,4 @@ lime .979/2.24, wheat .987/0.75, river .931/4.70, path .957/2.63, hedges .903/4.
 | H26 | river end: blue edge blocks paler toward paper (rbp .6) and slightly more frequent (rbf 1.15) | all bdE 1.76, river lf .949 bdE 2.99, edge 2.23 | pale-blue flecks like ref instead of hard dark blue; river end still ~30px lower than ref |
 | H27 | edge item 5 tried: bpl .2 (blocks lerped toward paper) edge bdE 2.23→2.27, rejected; ebj .6 (bay noise) no visible change, kept at 1 (no-op knobs left in) | unchanged | bays not from fbm jitter; source still to be found |
 | live 183bbe1 | interact 1280: 9→10 dup, drag 2.78 m, lasso →11, toolbar shown, 0 errors; 390 px OK | | |
+| H28 | hedges: per-vertex width fitted from ref (hedgeseg.py, 2 iters, 541 verts, x0.5-1.8) + dab layer blurred once (hdb 2.5, offscreen) | hedges lf .901→.914, bdE 4.05→3.37, ssim .612→.683; all bdE 1.73 | widths now track ref per segment; blur is one global value, not per segment |
