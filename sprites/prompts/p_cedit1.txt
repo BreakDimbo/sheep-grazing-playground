@@ -1,0 +1,13 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, same 1024x1024 canvas and framing), then copy the resulting PNG to /workspace/sheep/gen/cedit1.png. Do not post-process it.
+
+Attached images:
+1. Our own soft cartoon cloud sprite on flat pure green (#00FF00). This is the image to edit; keep its colours, soft cotton/clay texture, cream top and lavender-blue shaded underside.
+2. TARGET SILHOUETTE: white shape on green, same canvas and scale. Reshape the cloud so its outline fills this white shape.
+
+Shape changes required:
+- The TOP must be much FLATTER: a broad, almost level top edge with only small shallow bumps, no tall central dome.
+- The LEFT side must be LUMPIER: several small, distinct rounded puffs stepping down the left edge.
+- Right side a fairly straight rounded wall; bottom with a few rounded lobes and soft lavender creases between them.
+- Keep the same overall size and position in the canvas as the white target.
+- Matte soft surface, no outlines, no text, no sky.
+- Background perfectly flat uniform pure green #00FF00, no shadow, no gradient.
