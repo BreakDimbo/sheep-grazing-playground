@@ -10,27 +10,44 @@ S.rain = R;
 const NOISE = `float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
   float fbm(vec2 p){ return .5 * n(p) + .3 * n(p * 2.13 + 5.2) + .2 * n(p * 4.37 + 1.7); }`;
-// 1) wet ground: a multiply layer over the board (2*src*dst, 0.5 = untouched), like the cloud shadows
-const GU = { uA: { value: 0 }, uD: { value: 0 }, uDry: { value: 0 }, uG: { value: S.groundTex } };
+// 1) wet ground. Water fills the surface pores: less light scatters back, so the ground gets darker AND more saturated
+// (multiply by its own colour, normalised), and the film mirrors a little sky (Fresnel, stronger in hollows and toward the
+// far side where we look across it). Cloud shadows only darken and cool; wet ground deepens.
+const WET = `${NOISE}
+  float wetAt(vec2 p, vec2 uv, vec4 gt, out float tide){
+    float soak = smoothstep(0., .45, uA * 1.6 - (.35 * fbm(p * 1.6 + 9.) + .65 * fbm(p * .6)));
+    vec2 e2 = min(uv, 1. - uv); float e = 1. - 2. * min(e2.x, e2.y);
+    float o = clamp(.06 + .78 * pow(e, 1.3) + .42 * (fbm(p * .28 + 3.1) - .5) + .07 * (n(p * 2.2) - .5), .02, 1.);
+    float f = uD * 1.12 - .04;
+    float wetF = smoothstep(o - .018, o + .018, f) * (.86 + .14 * smoothstep(o, o + .25, f));
+    float water = smoothstep(.04, .14, gt.b - gt.r);
+    tide = exp(-pow((f - o - .026) / .016, 2.)) * uDry * soak * (1. - water);
+    return soak * wetF * (1. - water); }`;
+const GU = { uA: { value: 0 }, uD: { value: 0 }, uDry: { value: 0 }, uG: { value: S.groundTex }, uSky: { value: new THREE.Vector3() } };
+const GVS = `varying vec2 vUv; varying vec3 vW; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const gmat = new THREE.ShaderMaterial({ uniforms: GU, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4,
   blending: THREE.CustomBlending, blendSrc: THREE.DstColorFactor, blendDst: THREE.SrcColorFactor, blendEquation: THREE.AddEquation,
-  vertexShader: `varying vec2 vUv; varying vec3 vW; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-  fragmentShader: `uniform float uA, uD, uDry; uniform sampler2D uG; varying vec2 vUv; varying vec3 vW; ${NOISE}
-    void main(){ vec4 gt = texture2D(uG, vUv); if (gt.a < .5) discard;
-      vec2 p = vW.xz;
-      // soaking: first drops darken small spots, they merge, then the whole field is dark
-      float soak = smoothstep(0., .45, uA * 1.6 - (.35 * fbm(p * 1.6 + 9.) + .65 * fbm(p * .6)));
-      // drying order: the edges of the sheet first, then inward along a ragged front; hollows hold water longest
-      vec2 e2 = min(vUv, 1. - vUv); float e = 1. - 2. * min(e2.x, e2.y);
-      float o = clamp(.06 + .78 * pow(e, 1.3) + .42 * (fbm(p * .28 + 3.1) - .5) + .07 * (n(p * 2.2) - .5), .02, 1.);
-      float f = uD * 1.12 - .04;
-      float wetF = smoothstep(o - .018, o + .018, f) * (.86 + .14 * smoothstep(o, o + .25, f));
-      float water = smoothstep(.04, .14, gt.b - gt.r);
-      float wet = soak * wetF * (1. - water);
-      float tide = exp(-pow((f - o - .026) / .016, 2.)) * uDry * soak * (1. - water);   // the darker rim where the water draws back
-      vec3 col = mix(vec3(1.), vec3(.62, .68, .64), wet) * (1. - .13 * tide);
+  vertexShader: GVS,
+  fragmentShader: `uniform float uA, uD, uDry; uniform sampler2D uG; varying vec2 vUv; varying vec3 vW; ${WET}
+    void main(){ vec4 gt = texture2D(uG, vUv); if (gt.a < .5) discard; float tide;
+      float wet = wetAt(vW.xz, vUv, gt, tide);
+      vec3 c = gt.rgb / max(max(gt.r, gt.g), max(gt.b, 1e-3));
+      vec3 M = .76 * pow(c, vec3(.32));                                     // darker, and further from grey
+      vec3 col = mix(vec3(1.), M, wet) * (1. - .13 * tide);
       gl_FragColor = vec4(col * .5, 1.); }` });
 const wetM = new THREE.Mesh(S.boardGeo, gmat); wetM.position.y = 0.009; wetM.renderOrder = -1; wetM.visible = false; scene.add(wetM);
+const smat = new THREE.ShaderMaterial({ uniforms: GU, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -5,
+  blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
+  vertexShader: GVS,
+  fragmentShader: `uniform float uA, uD, uDry; uniform vec3 uSky; uniform sampler2D uG; varying vec2 vUv; varying vec3 vW; ${WET}
+    void main(){ vec4 gt = texture2D(uG, vUv); if (gt.a < .5) discard; float tide;
+      float wet = wetAt(vW.xz, vUv, gt, tide);
+      vec3 V = normalize(cameraPosition - vW); float F = .02 + .98 * pow(1. - V.y, 5.);
+      float hollow = smoothstep(.45, .75, fbm(vW.xz * .45 + 17.));            // standing film in the low spots
+      vec3 sk = mix(uSky, vec3(dot(uSky, vec3(.3, .5, .2))), .6);             // a grey rain sky
+      gl_FragColor = vec4(sk * (F + .012) * (.5 + 1.3 * hollow) * wet * .4, 0.);   // added in output space: a faint lift, never a sheen
+    }` });
+const skyM = new THREE.Mesh(S.boardGeo, smat); skyM.position.y = 0.0095; skyM.renderOrder = -1; skyM.visible = false; scene.add(skyM);
 // 2) rings on the river: each drop a thin crest (sky reflected) with a darker trough inside, expanding and fading
 let rib = null; scene.traverse(o => { if (o.material === scene.userData.riverMat) rib = o; });
 const RU = { uT: { value: 0 }, uK: { value: 0 }, uSky: { value: new THREE.Vector3() }, uVis: { value: 1 }, uLen: { value: rib.material.uniforms.uLen.value }, uG: { value: S.groundTex } };
@@ -84,7 +101,7 @@ S.HOOKS.push(dt => {
   if (R.k > .03){ R.A = Math.min(1, R.A + dt * R.k / 16); R.D = Math.min(1, R.D + dt * R.k / 1.5); }
   if (!R.T && R.k < .35 && R.A > 0){ R.D -= dt / 55; if (R.D <= 0){ R.D = 0; R.A = 0; } }
   if (S.flock && S.flock.huddle && !R.T && R.k < .3) S.flock.huddle = null;
-  wetM.visible = R.A > 0.002; GU.uA.value = R.A; GU.uD.value = R.D; GU.uDry.value = R.T ? 0 : ss(R.k, .35, 0);
+  wetM.visible = skyM.visible = R.A > 0.002; GU.uSky.value.set(S.hemi.color.r, S.hemi.color.g, S.hemi.color.b).multiplyScalar(1 / Math.PI); GU.uA.value = R.A; GU.uD.value = R.D; GU.uDry.value = R.T ? 0 : ss(R.k, .35, 0);
   // a ring is ~0.1 m across: on a small board that is a couple of pixels, a speck, so they fade out below ~60% board size
   const bs = Math.min(innerWidth / 1440, innerHeight / 900); RU.uVis.value = ss(bs, .5, .8);
   rings.visible = R.k > 0.01 && RU.uVis.value > 0.01; RU.uT.value = R.t; RU.uK.value = R.k;
