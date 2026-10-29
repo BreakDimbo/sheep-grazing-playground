@@ -41,9 +41,11 @@ S.HOOKS.push((dt) => { wt += dt; const time = wt; if (S.wind) S.wind.t = wt;
   U.uT.value = time; U.uSd.value.copy(sd); U.uK.value = k;
   const cosr = Math.max(sd.y, 0); U.uTint.value.set(sky.r / (sky.r + sc.r * cosr + 1e-4), sky.g / (sky.g + sc.g * cosr + 1e-4), sky.b / (sky.b + sc.b * cosr + 1e-4));
   const sh = (x, z) => { const c = cloudAt(x, z, time, sd) * k; return TMP.setRGB(1 + (U.uTint.value.x - 1) * c, 1 + (U.uTint.value.y - 1) * c, 1 + (U.uTint.value.z - 1) * c); };
-  for (const t of S.trees){ const m = bb(t.grp.userData.bb.b), g = gustAt(t.x, t.z, time); m.uniforms.uTint.value.copy(m.userData.t0).multiply(sh(t.x, t.z));
+  // wet in the rain (rain.js sets S.rain.sw): foliage a little darker and deeper, fleece darker and a touch grey
+  const sw = S.rain ? S.rain.sw : 0, WT = [1 - .17 * sw, 1 - .12 * sw, 1 - .2 * sw], WS = [1 - .16 * sw, 1 - .15 * sw, 1 - .13 * sw];
+  for (const t of S.trees){ const m = bb(t.grp.userData.bb.b), g = gustAt(t.x, t.z, time); m.uniforms.uTint.value.copy(m.userData.t0).multiply(sh(t.x, t.z)); if (sw > 0.002){ const v = m.uniforms.uTint.value; v.r *= WT[0]; v.g *= WT[1]; v.b *= WT[2]; }
     t.sw = (t.sw ?? 0) + ((g * 0.06 + Math.sin(time * 1.7 + t.phase) * 0.006) - (t.sw ?? 0)) * Math.min(1, dt * 2.5); m.uniforms.uSway.value = t.sw;
     t.crown.rotation.z += t.sw * 0.6; }
-  for (const s of S.sheep){ if (!s.spr) continue; const p = s.root.position, m = bb(s.spr); m.uniforms.uTint.value.copy(m.userData.t0).multiply(sh(p.x, p.z)); }
+  for (const s of S.sheep){ if (!s.spr) continue; const p = s.root.position, m = bb(s.spr); m.uniforms.uTint.value.copy(m.userData.t0).multiply(sh(p.x, p.z)); if (sw > 0.002){ const v = m.uniforms.uTint.value; v.r *= WS[0]; v.g *= WS[1]; v.b *= WS[2]; } }
 });
 S.wind = { cloudAt, gustAt, t: 0, tex };

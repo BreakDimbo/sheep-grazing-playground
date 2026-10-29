@@ -5,7 +5,7 @@
 // Occasional on its own (daytime), the cloud button in the clock bar starts or ends one; ?rain=1 starts at once.
 const S = window.__sheep, { THREE, scene } = S, L = S.light, Q = new URLSearchParams(location.search);
 const rnd = (a, b) => a + Math.random() * (b - a), ss = THREE.MathUtils.smoothstep;
-const R = { k: 0, oc: 0, A: 0, D: 0, T: 0, hold: 0, next: Q.get('rain') === '0' ? 1e9 : rnd(110, 220), t: 0, col: new THREE.Vector3(.8, .82, .85) };
+const R = { k: 0, oc: 0, sw: 0, A: 0, D: 0, T: 0, hold: 0, next: Q.get('rain') === '0' ? 1e9 : rnd(110, 220), t: 0, col: new THREE.Vector3(.8, .82, .85) };
 S.rain = R;
 const NOISE = `float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
@@ -97,6 +97,7 @@ S.HOOKS.push(dt => {
   if (!R.T){ R.next -= dt; if (R.next <= 0){ if (L.h > 6.5 && L.h < 19.2 && R.A < .01) start(); else R.next = 30; } }
   else { R.hold -= dt * ss(R.k, .8, .95); if (R.hold <= 0) stop(); }
   R.k += (R.T - R.k) * Math.min(1, dt / (R.T ? 6 : 8));                 // ~15 s to full rain, ~20 s to ease off
+  R.sw += ((R.T ? R.k : 0) - R.sw) * Math.min(1, dt / (R.T ? 10 : 35));   // sprites: soak in ~10 s, dry in ~1.5 min
   R.oc += ((R.T ? 1 : 0) - R.oc) * Math.min(1, dt / (R.T ? 7 : 14));    // the cloud lingers a little after the rain
   if (R.k > .03){ R.A = Math.min(1, R.A + dt * R.k / 16); R.D = Math.min(1, R.D + dt * R.k / 1.5); }
   if (!R.T && R.k < .35 && R.A > 0){ R.D -= dt / 55; if (R.D <= 0){ R.D = 0; R.A = 0; } }
