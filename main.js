@@ -214,6 +214,13 @@ function paintGround(){
       g.strokeStyle = lt ? `rgba(235,240,170,${BST})` : `rgba(40,90,20,${BST * .8})`; g.lineWidth = (14 + 22 * br()) * s;
       g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(an) * L * .5 + (br() - .5) * 30 * s, y + Math.sin(an) * L * .5 + (br() - .5) * 30 * s, x + Math.cos(an) * L, y + Math.sin(an) * L); g.stroke(); } }
     g0.save(); g0.filter = `blur(${5 * s}px)`; g0.drawImage(sc, 0, 0); g0.restore(); }
+  if (LAYOUT.colCorr && !Q.has('nocc')){                                         // low-frequency colour match to the ref fields (colfit.py, 24x30 RGB offsets, bilinear)
+    const CC = LAYOUT.colCorr, CG = +(Q.get('ccg') ?? 1), im = g.getImageData(0, 0, TEXW, TEXH), dd = im.data, GW = 24, GH = 30;
+    for (let y = 0; y < TEXH; y++){ const fy = clamp(y / TEXH * GH - 0.5, 0, GH - 1.001), y0 = fy | 0, ty = fy - y0;
+      for (let x = 0; x < TEXW; x++){ const fx = clamp(x / TEXW * GW - 0.5, 0, GW - 1.001), x0 = fx | 0, tx = fx - x0, i = (y * TEXW + x) * 4;
+        if (!dd[i + 3]) continue; const a = (y0 * GW + x0) * 3, b = a + 3, c = a + GW * 3, e2 = c + 3;
+        for (let k = 0; k < 3; k++) dd[i + k] += CG * ((CC[a + k] * (1 - tx) + CC[b + k] * tx) * (1 - ty) + (CC[c + k] * (1 - tx) + CC[e2 + k] * tx) * ty); } }
+    g.putImageData(im, 0, 0); }
   // hedgerows: soft dark bands
   const hedges = LAYOUT.hedges.map(P); const HW = i => (LAYOUT.hedgeW ? LAYOUT.hedgeW[i] : 1) * +(Q.get('hw') || 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
