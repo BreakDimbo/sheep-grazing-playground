@@ -84,9 +84,9 @@ void main(){
   if (uNight > 0.){ float ys = dot(c.rgb, vec3(.12, .52, .36)); c.rgb = mix(c.rgb, ys * vec3(.70, .88, 1.38), uNight * .66) * (1. - uNight * .28); }
   if (uRain > 0.){ vec2 f = gl_FragCoord.xy / uSs; float px = 1. / uSs;
     c.rgb = mix(c.rgb, uRc * .8 * c.a, .07 * uRain);                       // rain in the air scatters a little light: contrast drops
-    float r = streaks(f, vec2(9., 64.), 520., max(.5, .75 * px), 0., .34 * uRain) * .13
-            + streaks(f, vec2(17., 120.), 820., max(.85, .75 * px), 11., .24 * uRain) * .12
-            + streaks(f, vec2(44., 260.), 1300., 3.2, 23., .14 * uRain) * .07;
+    float r = streaks(f, vec2(9., 64.), 520., max(.5, .75 * px), 0., .36 * uRain) * .17
+            + streaks(f, vec2(17., 120.), 820., max(1., .8 * px), 11., .26 * uRain) * .16
+            + streaks(f, vec2(44., 260.), 1300., 3.2, 23., .15 * uRain) * .085;
     c = c * (1. - r) + vec4(uRc * .8 + .1, 1.) * r; }                          // a drop is a small grey-lit lens: over grass lighter, over paper darker
   gl_FragColor = c;
 }`;
@@ -123,7 +123,7 @@ S.POST.render = () => {
   U.uPx.value.set(1 / fbW, 1 / fbH);
   renderer.copyFramebufferToTexture(fbTex, zero);
   const ac = renderer.autoClear; renderer.autoClear = false;
-  U.uSs.value = sc; U.uRT.value = now / 1000; if (S.rain) U.uRc.value.copy(S.rain.col);
+  U.uSs.value = sc; U.uRT.value = S.rain && S.rain.rt != null ? S.rain.rt : now / 1000;   // rt: capture-only override if (S.rain) U.uRc.value.copy(S.rain.col);
   U.uNight.value = 0; U.uRain.value = 0; U.uSrc.value = fbTex; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
   U.uNight.value = night; U.uRain.value = rain; U.uSrc.value = rt.texture; U.uDir.value.set(0, 1); renderer.setRenderTarget(null); renderer.render(qs, qc);
   renderer.autoClear = ac;
