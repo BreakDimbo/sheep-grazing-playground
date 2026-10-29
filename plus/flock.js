@@ -9,6 +9,7 @@ const centroid = () => { const a = live().filter(s => !s.lamb); let x = 0, z = 0
 const restHour = h => h > 19.9 || h < 5.4;
 function goalNear(s, x, z, r0, r1){ for (let k = 0; k < 14; k++){ const a = rnd(-Math.PI, Math.PI), r = rnd(r0, r1), gx = x + Math.cos(a) * r, gz = z + Math.sin(a) * r; if (S.walkable(gx, gz, 1.0)) return [gx, gz]; } return null; }
 P.pickGoal = function(r0, r1){
+  const hd = S.flock && S.flock.huddle; if (hd && !this.flee) return goalNear(this, hd.x, hd.z, 0.4, hd.r) || pick0.call(this, 0.5, 1);   // rain: keep tight together
   if (this === leader) return pick0.call(this, 4, 9);                       // the leader roams a little further
   const [cx, cz] = centroid(), lx = leader ? leader.x : cx, lz = leader ? leader.z : cz;
   const dC = Math.hypot(this.x - cx, this.z - cz), dL = Math.hypot(this.x - lx, this.z - lz);
@@ -25,6 +26,11 @@ P.think = function(dt){
   // fleeing: run until the goal, then slow down and look back
   if (this.flee){ this.flee -= dt; if (this.flee <= 0 || !this.goal){ this.flee = 0; this.pace = 1; this.state = 'idle'; this.t = rnd(2, 4); this.lookYaw = rnd(-0.9, 0.9); this.regroup = rnd(3, 6); } else return; }
   if (this.regroup){ this.regroup -= dt; if (this.regroup <= 0){ this.regroup = 0; const [cx, cz] = centroid(); const g = goalNear(this, cx, cz, 1.2, 3); if (g){ this.state = 'walk'; this.goal = g; this.pace = 0.8; return; } } }
+  // rain: walk in to the huddle, then stand there (heads down, little grazing)
+  const hd = S.flock && S.flock.huddle;
+  if (hd && !this.lamb){ const d = Math.hypot(this.x - hd.x, this.z - hd.z);
+    if (d > hd.r + 0.8 && this.state !== 'walk'){ const g = goalNear(this, hd.x, hd.z, 0.4, hd.r); if (g){ this.state = 'walk'; this.goal = g; this.pace = 0.95; return; } }
+    if (d <= hd.r + 0.8 && this.state === 'graze' && Math.random() < dt * 0.3){ this.state = 'idle'; this.t = rnd(4, 9); } }
   // lambs: stay close to mother, trot to catch up
   if (this.lamb){ const m = this.mother; if (!m || m.dying){ this.lamb = false; } else {
       const d = Math.hypot(this.x - m.x, this.z - m.z);

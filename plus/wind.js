@@ -46,4 +46,4 @@ S.HOOKS.push((dt) => { wt += dt; const time = wt; if (S.wind) S.wind.t = wt;
     t.crown.rotation.z += t.sw * 0.6; }
   for (const s of S.sheep){ if (!s.spr) continue; const p = s.root.position, m = bb(s.spr); m.uniforms.uTint.value.copy(m.userData.t0).multiply(sh(p.x, p.z)); }
 });
-S.wind = { cloudAt, gustAt, t: 0 };
+S.wind = { cloudAt, gustAt, t: 0, tex };

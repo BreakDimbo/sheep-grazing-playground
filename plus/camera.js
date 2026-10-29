@@ -54,8 +54,18 @@ const fbTex = new THREE.FramebufferTexture(1, 1); fbTex.minFilter = fbTex.magFil
 const rt = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
 const FS = `
 precision highp float;
-uniform sampler2D uSrc; uniform vec2 uPx, uDir; uniform mat4 uInvPV; uniform vec3 uCam, uFwd; uniform float uFoc, uA, uMax, uNight;
+uniform sampler2D uSrc; uniform vec2 uPx, uDir; uniform mat4 uInvPV; uniform vec3 uCam, uFwd; uniform float uFoc, uA, uMax, uNight, uRain, uRT, uSs; uniform vec3 uRc;
 varying vec2 vUv;
+float hs(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+// rain through the lens: drops fall during the exposure, so each one is a short soft line along its fall, a little lighter
+// than what is behind it. Three depths: far (fine, slow on screen), mid, and near ones that are out of focus (wide, faint).
+float streaks(vec2 f, vec2 cell, float spd, float w, float seed, float dens){
+  vec2 q = vec2(f.x + f.y * .16, f.y + uRT * spd);
+  vec2 id = floor(q / cell), lc = q - id * cell; float hh = hs(id + seed); if (hh > dens) return 0.;
+  float ox = (.15 + .7 * hs(id + seed + 3.1)) * cell.x, len = cell.y * (.22 + .3 * hs(id + seed + 7.7)), oy = hs(id + seed + 1.3) * (cell.y - len);
+  float dx = (lc.x - ox) / w, t = (lc.y - oy) / len;
+  return exp(-dx * dx) * smoothstep(0., .3, t) * smoothstep(1., .55, t) * (.55 + .45 * hs(id + seed + 5.));
+}
 float coc(vec2 uv){                                  // thin lens: |1 - zf/z| for the ground point under this pixel
   vec4 a = uInvPV * vec4(uv * 2. - 1., -1., 1.), b = uInvPV * vec4(uv * 2. - 1., 1., 1.);
   vec3 p0 = a.xyz / a.w, d = normalize(b.xyz / b.w - p0);
@@ -72,11 +82,17 @@ void main(){
     c = acc / w; }
   // night: the eye's rods take over, colour drains toward a cool grey (linear in premultiplied rgb, so alpha stays right)
   if (uNight > 0.){ float ys = dot(c.rgb, vec3(.12, .52, .36)); c.rgb = mix(c.rgb, ys * vec3(.70, .88, 1.38), uNight * .66) * (1. - uNight * .28); }
+  if (uRain > 0.){ vec2 f = gl_FragCoord.xy / uSs; float px = 1. / uSs;
+    c.rgb = mix(c.rgb, uRc * .8 * c.a, .07 * uRain);                       // rain in the air scatters a little light: contrast drops
+    float r = streaks(f, vec2(9., 64.), 520., max(.5, .75 * px), 0., .34 * uRain) * .13
+            + streaks(f, vec2(17., 120.), 820., max(.85, .75 * px), 11., .24 * uRain) * .12
+            + streaks(f, vec2(44., 260.), 1300., 3.2, 23., .14 * uRain) * .07;
+    c = c * (1. - r) + vec4(uRc * .8 + .1, 1.) * r; }                          // a drop is a small grey-lit lens: over grass lighter, over paper darker
   gl_FragColor = c;
 }`;
 const VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
 const U = { uSrc: { value: fbTex }, uPx: { value: new THREE.Vector2() }, uDir: { value: new THREE.Vector2(1, 0) }, uInvPV: { value: new THREE.Matrix4() },
-  uCam: { value: new THREE.Vector3() }, uFwd: { value: new THREE.Vector3() }, uFoc: { value: 20 }, uA: { value: 0 }, uMax: { value: 6 }, uNight: { value: 0 } };
+  uCam: { value: new THREE.Vector3() }, uFwd: { value: new THREE.Vector3() }, uFoc: { value: 20 }, uA: { value: 0 }, uMax: { value: 6 }, uNight: { value: 0 }, uRain: { value: 0 }, uRT: { value: 0 }, uSs: { value: 1 }, uRc: { value: new THREE.Vector3(1, 1, 1) } };
 const mat = new THREE.ShaderMaterial({ vertexShader: VS, fragmentShader: FS, uniforms: U, blending: THREE.NoBlending, depthTest: false, depthWrite: false });
 const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); quad.frustumCulled = false;
 const qs = new THREE.Scene(); qs.add(quad); const qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -94,7 +110,8 @@ S.POST.render = () => {
   place(wall);
   renderer.render(scene, cam);
   const night = S.light ? S.light.night : 0;
-  if (!TILT && night < 0.01) return;
+  const rain = S.rain ? S.rain.k : 0;
+  if (!TILT && night < 0.01 && rain < 0.01) return;
   renderer.getDrawingBufferSize(size);
   if (size.x !== fbW || size.y !== fbH){ fbW = size.x; fbH = size.y; fbTex.image.width = fbW; fbTex.image.height = fbH; fbTex.dispose(); rt.setSize(fbW, fbH); }
   const ft = focusTarget(); if (!foc) foc = ft.clone(); else foc.lerp(ft, Math.min(1, dt * 0.35));   // a slow rack focus
@@ -106,8 +123,9 @@ S.POST.render = () => {
   U.uPx.value.set(1 / fbW, 1 / fbH);
   renderer.copyFramebufferToTexture(fbTex, zero);
   const ac = renderer.autoClear; renderer.autoClear = false;
-  U.uNight.value = 0; U.uSrc.value = fbTex; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
-  U.uNight.value = night; U.uSrc.value = rt.texture; U.uDir.value.set(0, 1); renderer.setRenderTarget(null); renderer.render(qs, qc);
+  U.uSs.value = sc; U.uRT.value = now / 1000; if (S.rain) U.uRc.value.copy(S.rain.col);
+  U.uNight.value = 0; U.uRain.value = 0; U.uSrc.value = fbTex; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
+  U.uNight.value = night; U.uRain.value = rain; U.uSrc.value = rt.texture; U.uDir.value.set(0, 1); renderer.setRenderTarget(null); renderer.render(qs, qc);
   renderer.autoClear = ac;
 };
 S.cam2 = cam;

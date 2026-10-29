@@ -3,7 +3,7 @@
 // the wind follows the gust field that ripples the grass, the scratch follows your drawing speed.
 const S = window.__sheep, L = S.light;
 const btn = document.getElementById('snd');
-const FILES = { b1: 'bleat1', b2: 'bleat2', b3: 'bleat3', b4: 'bleat4', b5: 'bleat5', b6: 'bleat6', lamb: 'lamb1', lark: 'lark', cr: 'crickets' };
+const FILES = { b1: 'bleat1', b2: 'bleat2', b3: 'bleat3', b4: 'bleat4', b5: 'bleat5', b6: 'bleat6', lamb: 'lamb1', lark: 'lark', cr: 'crickets', rain: 'rain' };
 let ctx = null, master, buf = {}, on = false, ready = false;
 const rnd = (a, b) => a + (b - a) * Math.random(), ss = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function noiseBuf(sec, kind){ const n = ctx.sampleRate * sec | 0, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
@@ -15,14 +15,15 @@ function noiseBuf(sec, kind){ const n = ctx.sampleRate * sec | 0, b = ctx.create
   const f = Math.min(n >> 3, ctx.sampleRate * .2 | 0);    // seamless loop
   for (let i = 0; i < f; i++){ const t = i / f; d[i] = d[i] * Math.sin(t * Math.PI / 2) + d[n - f + i] * Math.cos(t * Math.PI / 2); }
   const o = ctx.createBuffer(1, n - f, ctx.sampleRate); o.copyToChannel(d.subarray(0, n - f), 0); return o; }
-function loopFix(b, c = .4){ const sr = b.sampleRate, C = c * sr | 0, skip = .03 * sr | 0, n = b.length - skip, d = b.getChannelData(0).slice(skip), o = ctx.createBuffer(1, n - C, sr), od = o.getChannelData(0);
-  for (let i = 0; i < n - C; i++) od[i] = d[i];
-  for (let i = 0; i < C; i++){ const t = i / C; od[i] = d[i] * Math.sin(t * Math.PI / 2) + d[n - C + i] * Math.cos(t * Math.PI / 2); } return o; }
+function loopFix(b, c = .4){ const sr = b.sampleRate, C = c * sr | 0, skip = .03 * sr | 0, n = b.length - skip, o = ctx.createBuffer(b.numberOfChannels, n - C, sr);
+  for (let ch = 0; ch < b.numberOfChannels; ch++){ const d = b.getChannelData(ch).slice(skip), od = o.getChannelData(ch);
+    for (let i = 0; i < n - C; i++) od[i] = d[i];
+    for (let i = 0; i < C; i++){ const t = i / C; od[i] = d[i] * Math.sin(t * Math.PI / 2) + d[n - C + i] * Math.cos(t * Math.PI / 2); } } return o; }
 function src(b, loop){ const s = ctx.createBufferSource(); s.buffer = b; s.loop = !!loop; return s; }
 const gainN = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
 const panN = p => { const n = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain(); if (n.pan) n.pan.value = p; return n; };
 const filt = (type, f, q) => { const n = ctx.createBiquadFilter(); n.type = type; n.frequency.value = f; n.Q.value = q ?? .7; return n; };
-let wind = [], rustle, cricket = [], nextBleat = 8, nextLark = 4;
+let wind = [], rustle, cricket = [], rainG = null, rainLP = null, nextBleat = 8, nextLark = 4;
 async function init(){
   ctx = new (window.AudioContext || window.webkitAudioContext)();
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3;
@@ -38,6 +39,8 @@ async function init(){
   // crickets: two copies of the field, detuned and spread, so it reads as a meadow full of them rather than one insect
   const cb = loopFix(buf.cr);
   for (const [p, r, o] of [[-.55, .985, 0], [.55, 1.035, 4.3]]){ const s = src(cb, true), g = gainN(0), pn = panN(p); s.playbackRate.value = r; s.connect(g); g.connect(pn); pn.connect(master); s.start(0, o); cricket.push(g); }
+  // rain: a recorded shower on leaves and grass, its level and brightness following the rain intensity
+  { const s = src(loopFix(buf.rain, .8), true); rainLP = filt('lowpass', 2500, .5); rainG = gainN(0); s.connect(rainLP); rainLP.connect(rainG); rainG.connect(master); s.start(); }
   ready = true;
 }
 const v3 = new S.THREE.Vector3();
@@ -74,11 +77,13 @@ S.HOOKS.push(dt => {
   // pencil
   rustle.v += (Math.min(1, sp / 1400) - rustle.v) * Math.min(1, dt * 12); if (!down) sp *= .5;
   rustle.g.gain.setTargetAtTime(.32 * rustle.v, now, .03); rustle.bp.frequency.setTargetAtTime(2400 + 1800 * rustle.v, now, .05);
-  // crickets at night, larks by day
-  const night = L.night || 0, day = Math.min(1, L.sunK * 1.6);
-  for (const g of cricket) g.gain.setTargetAtTime(.22 * ss(night, .25, .8), now, .8);
+  const rk = S.rain ? S.rain.k : 0;
+  rainG.gain.setTargetAtTime(.4 * rk, now, .6); rainLP.frequency.setTargetAtTime(1800 + 7000 * rk, now, .6);
+  // crickets at night, larks by day (both hush in the rain)
+  const night = L.night || 0, day = Math.min(1, L.sunK * 1.6) * (1 - rk);
+  for (const g of cricket) g.gain.setTargetAtTime(.22 * ss(night, .25, .8) * (1 - rk), now, .8);
   if ((nextLark -= dt) < 0){ nextLark = rnd(14, 40); if (day > .2){ const d = rnd(6, 13); play(buf.lark, { gain: .16 * day, pan: rnd(-.7, .7), offset: rnd(0, buf.lark.duration - d - .1), dur: d, fade: 1.2 }); } }
-  if ((nextBleat -= dt) < 0){ nextBleat = rnd(10, 32) * (night > .6 ? 3 : 1); const a = S.sheep.filter(s => !s.dying && s.state !== 'rest'); if (a.length) bleat(a[Math.random() * a.length | 0], rnd(.5, .9)); }
+  if ((nextBleat -= dt) < 0){ nextBleat = rnd(10, 32) * (night > .6 ? 3 : 1) * (rk > .3 ? 1.8 : 1); const a = S.sheep.filter(s => !s.dying && s.state !== 'rest'); if (a.length) bleat(a[Math.random() * a.length | 0], rnd(.5, .9)); }
 });
 async function toggle(){
   on = !on; btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on);

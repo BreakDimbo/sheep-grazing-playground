@@ -39,6 +39,7 @@ const L = { h: 0, sunK: 1, moonK: 0, night: 0, dir: new THREE.Vector3() };   // 
 S.light = L;
 function apply(h){
   const [sc, sky, gnd] = sample(h), d = sunDir(h);
+  if (S.lightMod) S.lightMod(sc, sky, gnd, h);                   // weather (rain.js): overcast dims and greys the light
   const sunUp = (h > RISE && h < SET) ? THREE.MathUtils.smoothstep(d.y, 0.02, 0.10) : 0, moonK = THREE.MathUtils.smoothstep(h > 12 ? h - 24 : h, -4.9, -4.1) * (1 - THREE.MathUtils.smoothstep(h > 12 ? h - 24 : h, 4.0, 5.4));
   let ld, lc;
   if (sunUp > 0.001 || moonK < 0.001){ ld = d; lc = sc.clone().multiplyScalar(sunUp); }
@@ -80,4 +81,5 @@ import('./wind.js').catch(e => console.warn('wind', e));
 import('./flock.js').catch(e => console.warn('flock', e));
 import('./night.js').catch(e => console.warn('night', e));
 import('./camera.js').catch(e => console.warn('camera', e));
+import('./rain.js').catch(e => console.warn('rain', e));
 import('./sound.js').catch(e => console.warn('sound', e));

@@ -14,9 +14,10 @@ below. The excerpts keep each original's licence; the CC BY-SA excerpts are shar
 | `lamb1.mp3` | [Lamb bleating and its mother's response.flac](https://commons.wikimedia.org/wiki/File:Lamb_bleating_and_its_mother%27s_response.flac) | Yosef Ben Melamed | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | `lark.mp3` | [Alauda arvensis - Eurasian Skylark XC484052.mp3](https://commons.wikimedia.org/wiki/File:Alauda_arvensis_-_Eurasian_Skylark_XC484052.mp3) (via xeno-canto) | Marie-Lan Taÿ Pamart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | `crickets.mp3` | [Field cricket unedited.ogg](https://commons.wikimedia.org/wiki/File:Field_cricket_unedited.ogg) | Thatcher | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
+| `rain.mp3` | [Rain on leaves (Gravity Sound).wav](https://commons.wikimedia.org/wiki/File:Rain_on_leaves_(Gravity_Sound).wav) | Gravity Sound | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 
 Changes to the originals: cut into single calls or loops, 160 Hz–1.5 kHz high-pass (by layer), FFT de-noise,
-equal-power loop crossfade, loudness normalised, re-encoded as mono MP3.
+equal-power loop crossfade, loudness normalised, re-encoded as mono MP3 (the rain loop: a 22 s excerpt from 0:22, 90 Hz high-pass, loudness normalised, kept stereo, 96 kbps MP3; its level and low-pass follow the rain intensity).
 
 ## Generated (our own code, no samples)
 

@@ -23,4 +23,4 @@ separation, river/tree/edge avoidance and a preference for lush, uncrowded grass
 
 ## Plus edition sound
 
-The plus edition's sheep, lamb, skylark and cricket recordings come from Wikimedia Commons (public domain, CC BY-SA 3.0/4.0), by earthcalling, Yosef Ben Melamed, Marie-Lan Taÿ Pamart and Thatcher. Sources, licences and changes are listed in [docs/sound.md](docs/sound.md). Wind and pencil sounds are generated.
+The plus edition's sheep, lamb, skylark, cricket and rain recordings come from Wikimedia Commons (public domain, CC BY 4.0, CC BY-SA 3.0/4.0), by earthcalling, Yosef Ben Melamed, Marie-Lan Taÿ Pamart, Thatcher and Gravity Sound. Sources, licences and changes are listed in [docs/sound.md](docs/sound.md). Wind and pencil sounds are generated.

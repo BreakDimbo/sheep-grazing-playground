@@ -13,3 +13,6 @@
 body.clean #tod{display:none}
 @media (max-width:640px){#trk{width:140px}}
 #tiltbtn{ white-space: nowrap; margin-left: 10px; font: inherit; font-size: 11px; color: var(--ui2, #8a8275); background: none; border: 1px solid currentColor; border-radius: 9px; padding: 1px 8px; opacity: .8; cursor: pointer; }
+#rainbtn{width:26px;height:26px;padding:0;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.9;margin-right:-8px}
+#rainbtn svg{width:16px;height:16px;fill:none;stroke:var(--ui);stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round;transition:stroke 1.2s}
+#rainbtn .w{opacity:0;transition:opacity .3s}#rainbtn.on .w{opacity:1}
