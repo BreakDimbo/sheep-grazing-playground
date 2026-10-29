@@ -32,7 +32,7 @@ const gmat = new THREE.ShaderMaterial({ uniforms: GU, transparent: true, depthWr
     void main(){ vec4 gt = texture2D(uG, vUv); if (gt.a < .5) discard; float tide;
       float wet = wetAt(vW.xz, vUv, gt, tide);
       vec3 c = gt.rgb / max(max(gt.r, gt.g), max(gt.b, 1e-3));
-      vec3 M = .76 * pow(c, vec3(.32));                                     // darker, and further from grey
+      vec3 M = .72 * pow(c, vec3(.75));                                      // darker, and further from grey
       vec3 col = mix(vec3(1.), M, wet) * (1. - .13 * tide);
       gl_FragColor = vec4(col * .5, 1.); }` });
 const wetM = new THREE.Mesh(S.boardGeo, gmat); wetM.position.y = 0.009; wetM.renderOrder = -1; wetM.visible = false; scene.add(wetM);
