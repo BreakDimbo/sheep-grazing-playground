@@ -50,7 +50,12 @@ function place(dt){
 
 // ---- tilt-shift
 const size = new THREE.Vector2();
-const fbTex = new THREE.FramebufferTexture(1, 1); fbTex.minFilter = fbTex.magFilter = THREE.LinearFilter;
+// the scene is drawn into its own multisampled target (not copied back from the canvas: that copy could come back empty
+// on some frames). It stores the same sRGB-encoded 8-bit values the canvas would, so every blend looks exactly as before:
+// shaders encode for an sRGB output (three only honours a render target's colour space when flagged as XR) and the storage
+// is forced to plain RGBA8 so nothing decodes on the way.
+const srt = new THREE.WebGLRenderTarget(1, 1, { samples: Math.min(devicePixelRatio, 2) >= 2 ? 2 : 4, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+srt.isXRRenderTarget = true; srt.texture.colorSpace = THREE.SRGBColorSpace; srt.texture.internalFormat = 'RGBA8';
 const rt = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
 const FS = `
 precision highp float;
@@ -91,7 +96,7 @@ void main(){
   gl_FragColor = c;
 }`;
 const VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
-const U = { uSrc: { value: fbTex }, uPx: { value: new THREE.Vector2() }, uDir: { value: new THREE.Vector2(1, 0) }, uInvPV: { value: new THREE.Matrix4() },
+const U = { uSrc: { value: null }, uPx: { value: new THREE.Vector2() }, uDir: { value: new THREE.Vector2(1, 0) }, uInvPV: { value: new THREE.Matrix4() },
   uCam: { value: new THREE.Vector3() }, uFwd: { value: new THREE.Vector3() }, uFoc: { value: 20 }, uA: { value: 0 }, uMax: { value: 6 }, uNight: { value: 0 }, uRain: { value: 0 }, uRT: { value: 0 }, uSs: { value: 1 }, uRc: { value: new THREE.Vector3(1, 1, 1) } };
 const mat = new THREE.ShaderMaterial({ vertexShader: VS, fragmentShader: FS, uniforms: U, blending: THREE.NoBlending, depthTest: false, depthWrite: false });
 const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); quad.frustumCulled = false;
@@ -108,12 +113,12 @@ let last = performance.now();
 S.POST.render = () => {
   const now = performance.now(), wall = Math.min((now - last) / 1000, 2), dt = Math.min(wall, 0.1); last = now;
   place(wall);
-  renderer.render(scene, cam);
   const night = S.light ? S.light.night : 0;
   const rain = S.rain ? S.rain.k : 0;
-  if (!TILT && night < 0.01 && rain < 0.01) return;
+  if (!TILT && night < 0.01 && rain < 0.01){ renderer.render(scene, cam); return; }
   renderer.getDrawingBufferSize(size);
-  if (size.x !== fbW || size.y !== fbH){ fbW = size.x; fbH = size.y; fbTex.image.width = fbW; fbTex.image.height = fbH; fbTex.dispose(); rt.setSize(fbW, fbH); }
+  if (size.x !== fbW || size.y !== fbH){ fbW = size.x; fbH = size.y; rt.setSize(fbW, fbH); srt.setSize(fbW, fbH); }
+  renderer.setRenderTarget(srt); renderer.render(scene, cam);
   const ft = focusTarget(); if (!foc) foc = ft.clone(); else foc.lerp(ft, Math.min(1, dt * 0.35));   // a slow rack focus
   cam.getWorldDirection(U.uFwd.value); U.uCam.value.copy(cam.position);
   U.uFoc.value = fp.copy(foc).sub(cam.position).dot(U.uFwd.value);
@@ -121,10 +126,10 @@ S.POST.render = () => {
   const pr = renderer.getPixelRatio(), sc = Math.min(fbW / pr / 1440, fbH / pr / 900) * pr;   // blur in CSS px, scaled to how big the board is drawn
   U.uA.value = 14 * sc * TILT; U.uMax.value = 3.6 * sc;
   U.uPx.value.set(1 / fbW, 1 / fbH);
-  renderer.copyFramebufferToTexture(fbTex, zero);
   const ac = renderer.autoClear; renderer.autoClear = false;
-  U.uSs.value = sc; U.uRT.value = S.rain && S.rain.rt != null ? S.rain.rt : now / 1000;   // rt: capture-only override if (S.rain) U.uRc.value.copy(S.rain.col);
-  U.uNight.value = 0; U.uRain.value = 0; U.uSrc.value = fbTex; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
+  U.uSs.value = sc; U.uRT.value = S.rain && S.rain.rt != null ? S.rain.rt : now / 1000;   // rt: capture-only override
+  if (S.rain) U.uRc.value.copy(S.rain.col);
+  U.uNight.value = 0; U.uRain.value = 0; U.uSrc.value = srt.texture; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
   U.uNight.value = night; U.uRain.value = rain; U.uSrc.value = rt.texture; U.uDir.value.set(0, 1); renderer.setRenderTarget(null); renderer.render(qs, qc);
   renderer.autoClear = ac;
 };

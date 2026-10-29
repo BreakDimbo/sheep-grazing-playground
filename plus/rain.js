@@ -107,5 +107,6 @@ S.HOOKS.push(dt => {
   const bs = Math.min(innerWidth / 1440, innerHeight / 900); RU.uVis.value = ss(bs, .5, .8);
   rings.visible = R.k > 0.01 && RU.uVis.value > 0.01; RU.uT.value = R.t; RU.uK.value = R.k;
   const sk = S.hemi.color; RU.uSky.value.set(sk.r, sk.g, sk.b).multiplyScalar(.45 / Math.PI * 3);
-  R.col.set(sk.r, sk.g, sk.b).multiplyScalar(1 / Math.PI).addScalar(.06);
+  const gv = S.GRADE.value, gl = Math.sqrt(Math.min(1, (gv.x + gv.y + gv.z) / 3 / .55));   // drop tone (output space): bright by day, dim at dusk/night
+  R.col.set(.8 * gl, .82 * gl, .85 * gl);
 });
