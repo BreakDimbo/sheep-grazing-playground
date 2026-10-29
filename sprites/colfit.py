@@ -4,8 +4,11 @@ src = open('compare.py').read().split('regions=dict')[0]; sys.argv, arg = ['x', 
 gain = float(arg[2]) if len(arg) > 2 else 0.7
 pre = 'export const LAYOUT='; s = open('site/layout.js').read(); L = json.loads(s[len(pre):].strip().rstrip(';'))
 Hi = np.linalg.inv(np.array(L['cam']['Hpix']).reshape(3, 3)); E = 0.05; GW, GH = 24, 30
-fm = cv2.resize((light | bright | dark | lime | wheat).astype(np.uint8), (2376, 1432), interpolation=cv2.INTER_NEAREST) > 0
+EDG = len(arg) > 3 and arg[3] == 'edge'
+fm = cv2.resize(((light | bright | dark | lime | wheat) | (edge if EDG else False)).astype(np.uint8), (2376, 1432), interpolation=cv2.INTER_NEAREST) > 0
 R = cv2.GaussianBlur(cv2.imread('ref/F0.png').astype(float), (0, 0), 3); O = cv2.GaussianBlur(cv2.resize(cv2.imread(arg[1]), (2376, 1432)).astype(float), (0, 0), 3)
+P0 = np.array([208, 221, 228.]); nonp = lambda im: np.abs(im - P0).sum(-1) > 40
+if EDG: fm &= nonp(R) & nonp(O)
 ys, xs = np.nonzero(fm); ys, xs = ys[::3], xs[::3]
 p = Hi @ np.stack([xs, ys, np.ones_like(xs)]).astype(float); u, v = p[0] / p[2], p[1] / p[2]
 gx = ((u + E) / (1 + 2 * E) * GW).astype(int); gy = ((v + E) / (1 + 2 * E) * GH).astype(int); ok = (gx >= 0) & (gx < GW) & (gy >= 0) & (gy < GH)
