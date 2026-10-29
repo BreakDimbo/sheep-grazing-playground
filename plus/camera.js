@@ -54,7 +54,7 @@ const fbTex = new THREE.FramebufferTexture(1, 1); fbTex.minFilter = fbTex.magFil
 const rt = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
 const FS = `
 precision highp float;
-uniform sampler2D uSrc; uniform vec2 uPx, uDir; uniform mat4 uInvPV; uniform vec3 uCam, uFwd; uniform float uFoc, uA, uMax;
+uniform sampler2D uSrc; uniform vec2 uPx, uDir; uniform mat4 uInvPV; uniform vec3 uCam, uFwd; uniform float uFoc, uA, uMax, uNight;
 varying vec2 vUv;
 float coc(vec2 uv){                                  // thin lens: |1 - zf/z| for the ground point under this pixel
   vec4 a = uInvPV * vec4(uv * 2. - 1., -1., 1.), b = uInvPV * vec4(uv * 2. - 1., 1., 1.);
@@ -66,15 +66,17 @@ float coc(vec2 uv){                                  // thin lens: |1 - zf/z| fo
 void main(){
   float r = coc(vUv);
   vec4 c = texture2D(uSrc, vUv);
-  if (r < 0.25){ gl_FragColor = c; return; }
-  vec4 acc = c; float w = 1.;
-  for (int i = 1; i <= 6; i++){ float f = float(i) / 6.; float k = exp(-2.2 * f * f); vec2 o = uDir * uPx * r * f;
-    acc += (texture2D(uSrc, vUv + o) + texture2D(uSrc, vUv - o)) * k; w += 2. * k; }
-  gl_FragColor = acc / w;
+  if (r >= 0.25){ vec4 acc = c; float w = 1.;
+    for (int i = 1; i <= 6; i++){ float f = float(i) / 6.; float k = exp(-2.2 * f * f); vec2 o = uDir * uPx * r * f;
+      acc += (texture2D(uSrc, vUv + o) + texture2D(uSrc, vUv - o)) * k; w += 2. * k; }
+    c = acc / w; }
+  // night: the eye's rods take over, colour drains toward a cool grey (linear in premultiplied rgb, so alpha stays right)
+  if (uNight > 0.){ float ys = dot(c.rgb, vec3(.12, .52, .36)); c.rgb = mix(c.rgb, ys * vec3(.76, .91, 1.27), uNight * .62) * (1. - uNight * .28); }
+  gl_FragColor = c;
 }`;
 const VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
 const U = { uSrc: { value: fbTex }, uPx: { value: new THREE.Vector2() }, uDir: { value: new THREE.Vector2(1, 0) }, uInvPV: { value: new THREE.Matrix4() },
-  uCam: { value: new THREE.Vector3() }, uFwd: { value: new THREE.Vector3() }, uFoc: { value: 20 }, uA: { value: 0 }, uMax: { value: 6 } };
+  uCam: { value: new THREE.Vector3() }, uFwd: { value: new THREE.Vector3() }, uFoc: { value: 20 }, uA: { value: 0 }, uMax: { value: 6 }, uNight: { value: 0 } };
 const mat = new THREE.ShaderMaterial({ vertexShader: VS, fragmentShader: FS, uniforms: U, blending: THREE.NoBlending, depthTest: false, depthWrite: false });
 const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); quad.frustumCulled = false;
 const qs = new THREE.Scene(); qs.add(quad); const qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -91,7 +93,8 @@ S.POST.render = () => {
   const now = performance.now(), wall = Math.min((now - last) / 1000, 2), dt = Math.min(wall, 0.1); last = now;
   place(wall);
   renderer.render(scene, cam);
-  if (!TILT) return;
+  const night = S.light ? S.light.night : 0;
+  if (!TILT && night < 0.01) return;
   renderer.getDrawingBufferSize(size);
   if (size.x !== fbW || size.y !== fbH){ fbW = size.x; fbH = size.y; fbTex.image.width = fbW; fbTex.image.height = fbH; fbTex.dispose(); rt.setSize(fbW, fbH); }
   const ft = focusTarget(); if (!foc) foc = ft.clone(); else foc.lerp(ft, Math.min(1, dt * 0.35));   // a slow rack focus
@@ -103,8 +106,8 @@ S.POST.render = () => {
   U.uPx.value.set(1 / fbW, 1 / fbH);
   renderer.copyFramebufferToTexture(fbTex, zero);
   const ac = renderer.autoClear; renderer.autoClear = false;
-  U.uSrc.value = fbTex; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
-  U.uSrc.value = rt.texture; U.uDir.value.set(0, 1); renderer.setRenderTarget(null); renderer.render(qs, qc);
+  U.uNight.value = 0; U.uSrc.value = fbTex; U.uDir.value.set(1, 0); renderer.setRenderTarget(rt); renderer.render(qs, qc);
+  U.uNight.value = night; U.uSrc.value = rt.texture; U.uDir.value.set(0, 1); renderer.setRenderTarget(null); renderer.render(qs, qc);
   renderer.autoClear = ac;
 };
 S.cam2 = cam;

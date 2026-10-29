@@ -14,16 +14,17 @@ const KEYS = [
   [10.4, V(.796, .756, .371),   V(.40, .43, .72), V(.30, .34, .42)],
   [14.6, V(.796, .756, .371),   V(.40, .43, .72), V(.30, .34, .42)],
   [16.6, V(1.0, .76, .33),      V(.37, .39, .60), V(.30, .30, .32)],
-  [18.0, V(1.18, .62, .24),     V(.30, .30, .43), V(.24, .21, .22)],
-  [18.8, V(.95, .36, .13),      V(.25, .23, .38), V(.16, .14, .16)],
-  [19.3, V(0, 0, 0),            V(.19, .19, .35), V(.09, .09, .13)],
-  [20.6, V(0, 0, 0),            V(.024, .034, .075), V(.012, .015, .025)],
+  [18.0, V(1.16, .70, .30),     V(.24, .30, .42), V(.23, .23, .16)],   // warm key, clean blue sky, grass-green bounce (no mauve)
+  [18.8, V(.98, .50, .20),      V(.17, .22, .34), V(.14, .15, .10)],
+  [19.3, V(0, 0, 0),            V(.11, .15, .28), V(.06, .08, .08)],
+  [20.6, V(0, 0, 0),            V(.026, .036, .072), V(.012, .016, .022)],
   [24,   V(0, 0, 0),            V(.017, .027, .062), V(.009, .012, .022)]];
 function sample(h){ let i = 0; while (KEYS[i + 1][0] < h) i++; const a = KEYS[i], b = KEYS[i + 1], t = (h - a[0]) / (b[0] - a[0]), s = t * t * (3 - 2 * t);
   return [lerpV(a[1], b[1], s), lerpV(a[2], b[2], s), lerpV(a[3], b[3], s)]; }
 const RISE = 6.2, SET = 19.05, NOON = (RISE + SET) / 2;
 const EL0 = Math.asin(S.SUN_DIR.y), AZ0 = Math.atan2(S.SUN_DIR.z, S.SUN_DIR.x);
-const MOON = new THREE.Vector3(0.6, 0.62, -0.5).normalize(), MOONC = V(.05, .078, .16);
+// a low moon beyond the far edge, placed so its mirror image falls on the river: long moon shadows come toward you
+const MOON = new THREE.Vector3(-4.2, 22.2, -54.9).normalize(), MOONC = V(.17, .21, .32);
 const PI = Math.PI, SUNCOS = S.SUN_DIR.y;
 function sunDir(h){ const f = (h - RISE) / (SET - RISE); const el = EL0 * Math.pow(Math.max(0, Math.sin(PI * Math.min(Math.max(f, 0), 1))), 0.85) + 0.035 * (1 - Math.sin(PI * Math.min(Math.max(f, 0), 1))), az = AZ0 + (f - 0.5) * PI;
   return new THREE.Vector3(Math.cos(az) * Math.cos(el), Math.sin(el), Math.sin(az) * Math.cos(el)); }
@@ -33,11 +34,12 @@ let hour = Q.get('h') ? +Q.get('h') : 16.2, hold = Q.has('h'), dragT = -1;
 const PAPER = [[0xee, 0xe6, 0xd9], [0xe7, 0xdf, 0xd4], [0xe3, 0xdb, 0xd0], [0xdf, 0xd7, 0xcc]];
 const toLin = c => Math.pow(c / 255, 2.2), toS = v => Math.round(255 * Math.pow(Math.min(1, Math.max(0, v)), 1 / 2.2));
 let frame = 0;
-const L = { h: 0, sunK: 1, moonK: 0, dir: new THREE.Vector3() };   // shared with the other plus modules
+const NIGHT_MIX = .62, NIGHT_EXP = .28;
+const L = { h: 0, sunK: 1, moonK: 0, night: 0, dir: new THREE.Vector3() };   // shared with the other plus modules
 S.light = L;
 function apply(h){
   const [sc, sky, gnd] = sample(h), d = sunDir(h);
-  const sunUp = (h > RISE && h < SET) ? THREE.MathUtils.smoothstep(d.y, 0.02, 0.10) : 0, moonK = THREE.MathUtils.smoothstep(h > 12 ? h - 24 : h, -4.2, -3.0) * (1 - THREE.MathUtils.smoothstep(h > 12 ? h - 24 : h, 4.0, 5.4));
+  const sunUp = (h > RISE && h < SET) ? THREE.MathUtils.smoothstep(d.y, 0.02, 0.10) : 0, moonK = THREE.MathUtils.smoothstep(h > 12 ? h - 24 : h, -4.9, -4.1) * (1 - THREE.MathUtils.smoothstep(h > 12 ? h - 24 : h, 4.0, 5.4));
   let ld, lc;
   if (sunUp > 0.001 || moonK < 0.001){ ld = d; lc = sc.clone().multiplyScalar(sunUp); }
   else { ld = MOON; lc = MOONC.clone().multiplyScalar(moonK); }
@@ -50,8 +52,14 @@ function apply(h){
   // clouds sit high and catch the low sun sideways, so they stay lit (and turn rose) after the fields fall into shadow
   const cl = sky.clone().multiplyScalar(1.15).add(sc.clone().multiplyScalar(Math.max(0, THREE.MathUtils.smoothstep(d.y, -0.06, 0.05)) * 0.6 / 0.78));
   cl.add(MOONC.clone().multiplyScalar(moonK * 1.5)); CLOUD_GRADE.value.set(Math.min(1.05, cl.x), Math.min(1.05, cl.y), Math.min(1.05, cl.z));
+  // scotopic vision: below ~0.2 ground irradiance colour fades out of what we see (applied in the lens pass)
+  const Y = 0.2 * irr.x + 0.7 * irr.y + 0.1 * irr.z; L.night = 1 - THREE.MathUtils.smoothstep(Y, 0.05, 0.32);
   L.h = h; L.sunK = sunUp * (sc.x + sc.y + sc.z) / 1.92; L.moonK = moonK; L.dir.copy(ld);
-  if (frame++ % 6 === 0){ const g = GRADE.value, st = PAPER.map(p => `rgb(${toS(toLin(p[0]) * g.x)},${toS(toLin(p[1]) * g.y)},${toS(toLin(p[2]) * g.z)})`);
+  if (frame++ % 6 === 0){ const n = L.night, g = GRADE.value;
+    // the paper goes through exactly what the lens pass does to the board (scotopic shift + night exposure), so the ragged rim matches
+    const st = PAPER.map(p => { let c = [toS(toLin(p[0]) * g.x), toS(toLin(p[1]) * g.y), toS(toLin(p[2]) * g.z)];
+      if (n > 0){ const ys = .12 * c[0] + .52 * c[1] + .36 * c[2], m = n * NIGHT_MIX, ex = 1 - n * NIGHT_EXP; c = [.76, .91, 1.27].map((t, i) => Math.round((c[i] * (1 - m) + ys * t * m) * ex)); }
+      return `rgb(${c[0]},${c[1]},${c[2]})`; });
     document.body.style.background = `radial-gradient(75% 120% at 50% 50%,${st[0]} 0%,${st[0]} 40%,${st[1]} 64%,${st[2]} 77%,${st[3]} 100%)`;
     const lum = (g.x + g.y + g.z) / 3, dark = lum < 0.45; document.documentElement.style.setProperty('--ui', dark ? 'rgba(225,228,238,.55)' : 'rgba(60,62,50,.55)'); document.documentElement.style.setProperty('--ui2', dark ? 'rgba(225,228,238,.2)' : 'rgba(60,62,50,.18)');
     const hh = Math.floor(h), mm = Math.floor((h - hh) * 60); clk.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; knob.style.left = (h / 24 * 100) + '%'; }
@@ -70,4 +78,5 @@ S.setHour = h => { hour = h; hold = true; frame = 0; apply(h); };
 apply(hour);
 import('./wind.js').catch(e => console.warn('wind', e));
 import('./flock.js').catch(e => console.warn('flock', e));
+import('./night.js').catch(e => console.warn('night', e));
 import('./camera.js').catch(e => console.warn('camera', e));
