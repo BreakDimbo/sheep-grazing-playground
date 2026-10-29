@@ -50,3 +50,4 @@ lime .979/2.24, wheat .987/0.75, river .931/4.70, path .957/2.63, hedges .903/4.
 | H27 | edge item 5 tried: bpl .2 (blocks lerped toward paper) edge bdE 2.23→2.27, rejected; ebj .6 (bay noise) no visible change, kept at 1 (no-op knobs left in) | unchanged | bays not from fbm jitter; source still to be found |
 | live 183bbe1 | interact 1280: 9→10 dup, drag 2.78 m, lasso →11, toolbar shown, 0 errors; 390 px OK | | |
 | H28 | hedges: per-vertex width fitted from ref (hedgeseg.py, 2 iters, 541 verts, x0.5-1.8) + dab layer blurred once (hdb 2.5, offscreen) | hedges lf .901→.914, bdE 4.05→3.37, ssim .612→.683; all bdE 1.73 | widths now track ref per segment; blur is one global value, not per segment |
+| H29 | flower dots larger (fs 1.6→1.9), base count down (fd 1.2→.85) to keep the average colour, cluster add up (fag 1.8) | all bdE 1.72, light 1.75, hedges 3.36 | dots now closer to ref size; count in the left cluster still a bit lower |
