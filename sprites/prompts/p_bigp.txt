@@ -1,0 +1,16 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, same canvas size and framing), then copy the resulting PNG to /workspace/sheep/gen/edit_OUT.png. Do not post-process it.
+
+Attached images:
+1. Our own cartoon tree sprite on flat magenta (#FF00FF). This is the image to edit.
+2. TARGET SILHOUETTE: white shape on magenta, same canvas and scale. The crown must fill this white shape. Keep the one thin trunk at the bottom centre where image 1 has it.
+3. A loose shading/style reference only (do not copy it): note how its crown is ONE fused soft clay mass.
+
+Most important:
+- FEWER, LARGER lumps: about 8 to 12 big smooth rounded lobes in total, fused and merged into one soft clay mass, NOT many small separate balls. A few small knobs on the outline are fine.
+- Blossom PINK: mid tone #e08aaa, smooth and soft, not bubbly.
+- Light from the upper LEFT only; only the upper-left lobes get a soft highlight (#f6c3d3).
+- The RIGHT half and the lower part are in deep shade (#b25a80), the far right edge darkest (#984468).
+- DARK creases between the large lobes (#86385a), clearly visible, especially on the shaded right side.
+- Matte, smooth, soft clay, no outlines, no specular glints, no noise.
+- Trunk plain dark brown (#4a3326).
+- Background perfectly flat uniform pure magenta #FF00FF, no shadow, no ground, no text.
