@@ -503,8 +503,8 @@ function makeCloud(p, s){
   m.position.copy(p); m.scale.set(s, s * 1.2, s * 0.8); scene.add(m); clouds.push({ m, p: p.clone(), ph: R(0, 6) });
 }
 const CLOUD_LOOK = [[0, 1.0, 0.92], [2, 1.0, 0.8]];       // atlas cell, x stretch, opacity
-LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07, y + w * 0.05, -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX * (i ? 1 : +(Q.get('cls') ?? 1.15));
-  const [cell, sx, al] = CLOUD_LOOK[i] || CLOUD_LOOK[0], C = SPR.clouds, c = C.cells[cell], cs = ww / (c.w * sx);
+LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07 + (i ? 0 : +(Q.get('clx') ?? 11)), y + w * 0.05 + (i ? 0 : +(Q.get('cly') ?? -10)), -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX * (i ? 1 : +(Q.get('cls') ?? 1.08));
+  const [cell, sx0, al] = CLOUD_LOOK[i] || CLOUD_LOOK[0], sx = sx0 * (i ? 1 : +(Q.get('clsx') ?? 0.93)), C = SPR.clouds, c = C.cells[cell], cs = ww / (c.w * sx);
   const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: i ? al : Math.min(1, al * +(Q.get('cla') ?? 1.08)), fade: i ? [1, 0, 0, 1] : (Q.get('clf') || '0.55,0.75,-0.55,0.12').split(',').map(Number), mid: i ? [1, 1, 1] : (Q.get('clm') || '1,1,1').split(',').map(Number), shade: i ? [1, 1, 1] : (Q.get('clsh') || '1,1,1').split(',').map(Number), sharp: i ? [0, 0] : (Q.get('clk') || '1.2,14').split(',').map(Number) });   // clm/clsh deepen the main cloud's folds
   m.position.copy(p); m.renderOrder = 3; scene.add(m); clouds.push({ m, p: p.clone(), ph: 0 }); });
 
