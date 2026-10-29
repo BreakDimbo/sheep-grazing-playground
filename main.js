@@ -497,9 +497,9 @@ function makeCloud(p, s){
   m.position.copy(p); m.scale.set(s, s * 1.2, s * 0.8); scene.add(m); clouds.push({ m, p: p.clone(), ph: R(0, 6) });
 }
 const CLOUD_LOOK = [[0, 1.0, 0.92], [2, 1.0, 0.8]];       // atlas cell, x stretch, opacity
-LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07, y + w * 0.05, -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX;
+LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07, y + w * 0.05, -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX * (i ? 1 : +(Q.get('cls') ?? 1.15));
   const [cell, sx, al] = CLOUD_LOOK[i] || CLOUD_LOOK[0], C = SPR.clouds, c = C.cells[cell], cs = ww / (c.w * sx);
-  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: al, fade: i ? [1, 0, 0, 1] : [0.55, 0.75, -0.55, 0.12] });
+  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: i ? al : Math.min(1, al * +(Q.get('cla') ?? 1.08)), fade: i ? [1, 0, 0, 1] : [0.55, 0.75, -0.55, 0.12] });
   m.position.copy(p); m.renderOrder = 3; scene.add(m); clouds.push({ m, p: p.clone(), ph: 0 }); });
 
 // ---------- sheep ----------
