@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<base href="../">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Sheep grazing grass — plus</title>
+<meta name="description" content="A little meadow on paper. Draw a loop on the grass to make a sheep.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='17' r='11' fill='%23f3ece0'/%3E%3Cellipse cx='25' cy='19' rx='4' ry='3.4' fill='%232b211d'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/inter-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<svg id="draw" aria-hidden="true"><path id="stroke" d=""/></svg>
+<div id="sel" hidden>
+  <div class="box"><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>
+  <div class="dim"></div>
+</div>
+<div id="bar" hidden>
+  <button data-mode="idle">Idle</button><button data-mode="graze">Graze</button><button data-mode="walk">Walk</button><button data-mode="jump">Jump</button>
+  <span class="sep"></span>
+  <button class="ic" data-act="rotl" title="Rotate left" aria-label="Rotate left"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.4 3.6v4h4"/></svg></button>
+  <button class="ic" data-act="rotr" title="Rotate right" aria-label="Rotate right"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.6 3.6v4h-4"/></svg></button>
+  <span class="sep"></span>
+  <button class="ic" data-act="dup" title="Duplicate" aria-label="Duplicate"><svg viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="1.6"/><path d="M15.5 8.5V6.1c0-.9-.7-1.6-1.6-1.6H6.1c-.9 0-1.6.7-1.6 1.6v7.8c0 .9.7 1.6 1.6 1.6h2.4"/></svg></button>
+  <button class="ic" data-act="del" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.8c0-.4.3-.8.8-.8h3.4c.5 0 .8.4.8.8v1.7"/><path d="M6.6 6.5l.8 12.2c.1.8.7 1.3 1.5 1.3h6.2c.8 0 1.4-.5 1.5-1.3l.8-12.2"/></svg></button>
+</div>
+<div id="hint">Draw a loop on the grass to make a sheep</div>
+<a id="ed" href="./">faithful edition</a>
+<a id="credit" href="https://x.com/AreadneMaria" target="_blank" rel="noopener">after a scene by @AreadneMaria</a>
+<link rel="stylesheet" href="plus/plus.css">
+<div id="tod"><span id="clk">16:30</span><div id="trk"><i id="knob"></i></div><button id="snd" aria-label="Sound" title="Sound"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="w" d="M15.5 9.2c1 .8 1.5 1.8 1.5 2.8s-.5 2-1.5 2.8"/></svg></button></div>
+<script>window.PLUS=1</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>

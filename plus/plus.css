@@ -1,0 +1,14 @@
+/* plus edition: minimal time-of-day scrubber + sound toggle; colours follow the light (set from plus.js) */
+:root{--ui:rgba(60,62,50,.55);--ui2:rgba(60,62,50,.18)}
+#tod{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;align-items:center;gap:12px;color:var(--ui);font-size:11px;font-variant-numeric:tabular-nums;letter-spacing:.04em;transition:color 1.2s}
+#clk{width:34px;text-align:right}
+#trk{position:relative;width:180px;height:22px;cursor:pointer;touch-action:none}
+#trk::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--ui2);transition:background 1.2s}
+#knob{position:absolute;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ui);transition:background 1.2s}
+#snd{width:26px;height:26px;padding:0;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.9}
+#snd svg{width:15px;height:15px;fill:none;stroke:var(--ui);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;transition:stroke 1.2s}
+#snd .w{opacity:0;transition:opacity .3s}#snd.on .w{opacity:1}
+#snd:not(.on) svg::after{content:""}
+#hint,#credit,#ed{color:var(--ui)!important;transition:color 1.2s,opacity .8s}
+body.clean #tod{display:none}
+@media (max-width:640px){#trk{width:140px}}

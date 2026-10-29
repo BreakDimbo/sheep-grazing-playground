@@ -42,11 +42,12 @@ const TILE_A = +(Q.get('ga') || 0), TILE_S = +(Q.get('ts') || 0.5);
 function paintTile(g, img, s, alpha){ if (!img) return; g.save(); g.globalCompositeOperation = 'overlay'; g.globalAlpha = alpha;
   const pt = g.createPattern(img, 'repeat'); pt.setTransform(new DOMMatrix().scale(TILE_S * s)); g.fillStyle = pt; g.fillRect(0, 0, TEXW, TEXH); g.restore(); }
 const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform vec2 uCenter; uniform float uBias; varying vec2 vUv; varying vec2 vL;
+const GRADE = { value: new THREE.Vector3(1, 1, 1) }, CLOUD_GRADE = { value: new THREE.Vector3(1, 1, 1) };   // global light grade (1 = the replica; the /plus/ edition animates it)
+const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform float uSway; uniform vec2 uCenter; uniform float uBias; varying vec2 vUv; varying vec2 vL;
   void main(){ vUv = uRect.xy + uv * uRect.zw; vL = uv;
     vec4 mv = modelViewMatrix * vec4(0., 0., 0., 1.); float k = 1. - uBias / length(mv.xyz); mv.xyz *= k;   // pulled toward the eye so the card never cuts into the ground
-    mv.xy += (uv - uCenter) * uSize * k; gl_Position = projectionMatrix * mv; }`;
-const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec3 uMid; uniform float uMidB; uniform vec2 uSharp; uniform vec4 uFade; uniform float uSolid; uniform float uRim; varying vec2 vUv; varying vec2 vL;
+    mv.xy += (uv - uCenter) * uSize * k; mv.x += uSway * uSize.y * k * max(uv.y - uCenter.y, 0.) * max(uv.y - uCenter.y, 0.); gl_Position = projectionMatrix * mv; }`;
+const BB_FS = `uniform vec3 uGrade; uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec3 uMid; uniform float uMidB; uniform vec2 uSharp; uniform vec4 uFade; uniform float uSolid; uniform float uRim; varying vec2 vUv; varying vec2 vL;
   float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)) + uSeed) * 43758.5453); }
   float nn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + 1.), f.x), f.y); }
   void main(){ vec4 c = texture2D(map, vUv); if (uSolid > 0.){ vec2 o = uRim * vec2(1. / 3072., 1. / 1536.); float m = 1.;   // interior (all ring taps inside the sprite) -> opaque; outer rim keeps a soft ramp
@@ -58,14 +59,14 @@ const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint;
     if (uSharp.x > 0.){ vec3 bl = vec3(0.); float o = uSharp.y / 1024.; for (int k = 0; k < 8; k++){ float an = float(k) * .785398; vec4 t = texture2D(map, vUv + o * vec2(cos(an), sin(an))); bl += mix(c.rgb, t.rgb, step(0.3, t.a)); } vec3 W = vec3(.2126, .7152, .0722); float dd = dot(c.rgb - bl / 8., W); c.rgb = clamp(c.rgb + uSharp.x * dd * (dd < 0. ? vec3(1.05, 1.1, .8) : vec3(1.)), 0., 1.); }   // local contrast (cloud folds)
     float lu = dot(c.rgb, vec3(.2126, .7152, .0722)); c.rgb = mix(vec3(lu), c.rgb, uSat);
     c.rgb *= mix(vec3(1.), uShade, smoothstep(0.45, 0.04, lu)); c.rgb *= mix(vec3(1.), uMid, smoothstep(uMidB, uMidB - 0.33, lu) * smoothstep(0.3, 0.55, lu));
-    gl_FragColor = vec4(c.rgb * uTint, c.a);
+    gl_FragColor = vec4(c.rgb * uTint * uGrade, c.a);
     #include <colorspace_fragment>
   }`;
 const BB_GEO = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
 function billboard(tex, rect, size, center, opts = {}){
   const m = new THREE.ShaderMaterial({ vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: opts.depthWrite ?? true,
     uniforms: { map: { value: tex }, uRect: { value: new THREE.Vector4(...rect) }, uSize: { value: new THREE.Vector2(...size) }, uCenter: { value: new THREE.Vector2(...center) },
-      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uSolid: { value: opts.solid ?? 0 }, uRim: { value: +(Q.get('trim') ?? 5) }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uMid: { value: new THREE.Vector3(...(opts.mid ?? [1, 1, 1])) }, uMidB: { value: opts.midB ?? 0.95 }, uSharp: { value: new THREE.Vector2(...(opts.sharp ?? [0, 0])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
+      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uSolid: { value: opts.solid ?? 0 }, uRim: { value: +(Q.get('trim') ?? 5) }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uMid: { value: new THREE.Vector3(...(opts.mid ?? [1, 1, 1])) }, uMidB: { value: opts.midB ?? 0.95 }, uSharp: { value: new THREE.Vector2(...(opts.sharp ?? [0, 0])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 }, uSway: { value: 0 }, uGrade: opts.grade ?? GRADE } });
   const b = new THREE.Mesh(BB_GEO, m); b.frustumCulled = false; return b;
 }
 // atlas rect for (col,row) of a grid; v flipped for GL
@@ -404,9 +405,9 @@ function riverDist(x, z){ let best = 1e9; for (let i = 0; i < riverPts.length; i
     if (i < N - 1){ const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
   }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geo.setAttribute('tuv', new THREE.Float32BufferAttribute(tuv, 2)); geo.setIndex(idx);
-  const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLen: { value: acc }, uG: { value: groundTex } },
+  const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLen: { value: acc }, uG: { value: groundTex }, uGrade: GRADE },
     vertexShader: `attribute vec2 tuv; varying vec2 vUv; varying vec2 vT; void main(){ vUv=uv; vT=tuv; gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.); }`,
-    fragmentShader: `uniform float uTime; uniform float uLen; uniform sampler2D uG; varying vec2 vUv; varying vec2 vT;
+    fragmentShader: `uniform vec3 uGrade; uniform float uTime; uniform float uLen; uniform sampler2D uG; varying vec2 vUv; varying vec2 vT;
       #define SX ${(+(Q.get('sx') ?? 14)).toFixed(3)}
       #define SY ${(+(Q.get('sy') ?? 0.25)).toFixed(3)}
       #define SA ${(+(Q.get('sa') ?? 0.09)).toFixed(3)}
@@ -429,7 +430,7 @@ function riverDist(x, z){ let best = 1e9; for (let i = 0; i < riverPts.length; i
           rim=max(rim,on*smoothstep(.0,.12,xr)*smoothstep(RW,RW*.2,xr)*smoothstep(RN,RN+RK,n(vec2(s*RF-uTime*.1,3.+float(k)*17.)+vec2(xr*3.,0.)))); }
         vec4 gt=texture2D(uG,vT); float wet=step(.5,gt.a)*smoothstep(.04,.14,gt.b-gt.r);   // only over painted water (not paper / flecks)
         float a=st*SA*edge*ends*wet, ar=rim*RA*ends*wet;
-        gl_FragColor=vec4(mix(vec3(.86,.93,1.),vec3(.55,.82,.95),ar/(a+ar+1e-4)),a+ar*(1.-a));
+        gl_FragColor=vec4(mix(vec3(.86,.93,1.),vec3(.55,.82,.95),ar/(a+ar+1e-4))*uGrade,a+ar*(1.-a));
         #include <colorspace_fragment>
       }` });
   const ribbon = new THREE.Mesh(geo, mat); ribbon.renderOrder = 1; scene.add(ribbon);
@@ -505,7 +506,7 @@ function makeCloud(p, s){
 const CLOUD_LOOK = [[0, 1.0, 0.92], [2, 1.0, 0.8]];       // atlas cell, x stretch, opacity
 LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07 + (i ? 0 : +(Q.get('clx') ?? 11)), y + w * 0.05 + (i ? 0 : +(Q.get('cly') ?? -10)), -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX * (i ? 1 : +(Q.get('cls') ?? 1.08));
   const [cell, sx0, al] = CLOUD_LOOK[i] || CLOUD_LOOK[0], sx = sx0 * (i ? 1 : +(Q.get('clsx') ?? 0.93)), C = SPR.clouds, c = C.cells[cell], cs = ww / (c.w * sx);
-  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: i ? al : Math.min(1, al * +(Q.get('cla') ?? 1.08)), fade: i ? [1, 0, 0, 1] : (Q.get('clf') || '0.55,0.75,-0.55,0.12').split(',').map(Number), mid: i ? [1, 1, 1] : (Q.get('clm') || '1.03,0.92,0.97').split(',').map(Number), shade: i ? [1, 1, 1] : (Q.get('clsh') || '1,1,1').split(',').map(Number), sharp: i ? [0, 0] : (Q.get('clk') || '1.2,14').split(',').map(Number) });   // clm/clsh deepen the main cloud's folds
+  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { grade: CLOUD_GRADE, depthWrite: false, alpha: i ? al : Math.min(1, al * +(Q.get('cla') ?? 1.08)), fade: i ? [1, 0, 0, 1] : (Q.get('clf') || '0.55,0.75,-0.55,0.12').split(',').map(Number), mid: i ? [1, 1, 1] : (Q.get('clm') || '1.03,0.92,0.97').split(',').map(Number), shade: i ? [1, 1, 1] : (Q.get('clsh') || '1,1,1').split(',').map(Number), sharp: i ? [0, 0] : (Q.get('clk') || '1.2,14').split(',').map(Number) });   // clm/clsh deepen the main cloud's folds
   m.position.copy(p); m.renderOrder = 3; scene.add(m); clouds.push({ m, p: p.clone(), ph: 0 }); });
 
 // ---------- sheep ----------
@@ -861,6 +862,7 @@ function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspe
 addEventListener('resize', () => { resize(); });
 resize(); homeView(); populate();
 setTimeout(() => hint.classList.add('off'), 7000);
+const HOOKS = [], POST = {};
 const clock = new THREE.Clock(); let time = 0, wearAcc = 0, frames = 0;
 renderer.setAnimationLoop(() => {
   const raw = Math.min(clock.getDelta(), 0.05), dt = FREEZE ? 0 : raw; time += dt;
@@ -869,11 +871,13 @@ renderer.setAnimationLoop(() => {
   for (const c of clouds){ c.m.position.x = c.p.x + Math.sin(time * 0.05 + c.ph) * 0.8; c.m.position.y = c.p.y + Math.sin(time * 0.4 + c.ph) * 0.08; }
   scene.userData.riverMat.uniforms.uTime.value = time;
   wearAcc += dt; if (wearAcc > 0.25){ flushWear(wearAcc); wearAcc = 0; }
+  for (const h of HOOKS) h(dt, time);
   controls.update();
-  renderer.render(scene, camera);
+  if (POST.render) POST.render(); else renderer.render(scene, camera);
   placeSelection(); if (selected) refreshBar();
   frames++; if (frames === 3) document.body.dataset.ready = '1';
 });
 window.__sheep = { sprInfo: () => sheep.map(s => { const v = s.root.position.clone().project(camera), d = -s.root.position.clone().applyMatrix4(camera.matrixWorldInverse).z;
     return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: SHEEP_CELL_W * s.root.scale.x * FPX / d, frame: s.frame }; }), treeInfo: () => trees.map(t => { const u = t.grp.userData.bb, w = new THREE.Vector3(t.grp.position.x, u.cy, t.grp.position.z), v = w.clone().project(camera), d = -w.clone().applyMatrix4(camera.matrixWorldInverse).z;
-    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: u.cw * FPX / d, ccy: u.ccy, idx: u.cell }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
+    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: u.cw * FPX / d, ccy: u.ccy, idx: u.cell }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, THREE, scene, renderer, sun, hemi, SUN_DIR, trees, clouds, ground, boardGeo, groundTex, GRADE, CLOUD_GRADE, woolMat, HOOKS, POST, CAM, MOBILE, E, W, D, wearMesh, canvas, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
+if (window.PLUS) import('./plus/plus.js');
