@@ -59,3 +59,4 @@ lime .979/2.24, wheat .987/0.75, river .931/4.70, path .957/2.63, hedges .903/4.
 | H34 | field colour: colfit.py fits a low-frequency 24x30 RGB offset map (ref minus ours, fields only, ±25) applied before hedges/river | all lf .967 bdE 1.72→1.63; light 1.75→1.57; river 2.87; hedges 3.31; edge 2.19 | top-left field now ref's yellow-green |
 | H35 | edge: colCorr refit including non-paper pixels in the edge band (colfit.py ... edge) | edge lf .968 bdE 2.19→2.06; all bdE 1.58; light 1.51; trees 4.01 | numbers better, but visually the blocks still read as small separate green dots, while the ref's are denser grey-green clumps; paleness only slightly changed |
 | H36 | main cloud 15% bigger (cls 1.15), slightly more opaque (cla 1.08) | all bdE 1.59 (flat) | size now matches the ref; the ref cloud has deeper folds, ours is softer |
+| live 7a8d3a0 | interact 1280: 9→10 dup, drag 2.78 m, lasso →11, toolbar, 0 errors; 390 px OK | | |
