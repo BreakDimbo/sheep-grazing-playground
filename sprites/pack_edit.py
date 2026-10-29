@@ -16,7 +16,9 @@ else: C[..., 1] = np.minimum(C[..., 1], (C[..., 0] + C[..., 2]) / 2 + 10); a = c
 rgba = np.dstack([C, a * 255]).astype(np.uint8)
 ys, xs = np.where(a > 0.5); ex = rgba[ys.min():ys.max()+1, xs.min():xs.max()+1]
 oy, ox = np.where(orig[..., 3] > 127); w, h = ox.max() - ox.min() + 1, oy.max() - oy.min() + 1
-ex = cv2.resize(ex, (w, h), interpolation=cv2.INTER_AREA)
+if '--frame' in sys.argv:                                     # keep the edit's own outline: the canvas maps 1:1 onto the cell (Codex kept the framing)
+    full = cv2.resize(rgba, (TC, TC), interpolation=cv2.INTER_AREA); ys, xs = np.where(full[..., 3] > 127); ex = full[ys.min():ys.max()+1, xs.min():xs.max()+1]; ox, oy = xs, ys; w, h = ex.shape[1], ex.shape[0]
+else: ex = cv2.resize(ex, (w, h), interpolation=cv2.INTER_AREA)
 if '--match' in sys.argv:                                     # keep the edit's lobe structure but the original cell's per-channel mean/std (tone stays fitted)
     ma, mo = ex[..., 3] > 127, orig[..., 3] > 127; oc = cv2.cvtColor(orig, cv2.COLOR_BGRA2RGBA).astype(np.float32); ef = ex.astype(np.float32)
     for k in range(3): e, o = ef[..., k][ma], oc[..., k][mo]; ef[..., k] = (ef[..., k] - e.mean()) / (e.std() + 1e-3) * o.std() + o.mean()

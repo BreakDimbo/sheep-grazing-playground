@@ -1,0 +1,14 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, same canvas size and framing), then copy the resulting PNG to /workspace/sheep/gen/edit1.png. Do not post-process it.
+
+Attached images:
+1. Our own cartoon tree sprite on flat magenta (#FF00FF). This is the image to edit.
+2. A TARGET SILHOUETTE: white shape on magenta, same canvas and scale as image 1. The edited tree's crown outline must fill this white shape as closely as possible (it is wider and more irregular than the current crown, with a flatter, lumpier top). Keep the small trunk where it is in image 1.
+3. A loose shading/style reference only (do not copy it).
+
+Edit instructions:
+- Reshape the crown so its outline matches the white silhouette of image 2: wide, irregular, lumpy outline.
+- Inside, soft clay-like lobes of mixed sizes (a few large, several medium), NOT an even grid of round balls; lobes overlap irregularly.
+- Light from the upper left: upper-left lobes fresh yellow-green (#8cc84b), mid tone #5aa832, and the right and lower-right side in clearly deeper shade (#2f7a24) with DEEP dark creases (#235e1c) between the lobes on the shaded side.
+- Matte, smooth, soft, no outlines, no specular glints, no texture noise.
+- Trunk plain dark brown (#4a3326).
+- Background perfectly flat uniform pure magenta #FF00FF, no shadow, no ground, no text.
