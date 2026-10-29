@@ -46,7 +46,7 @@ const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform vec2 uCenter; uni
   void main(){ vUv = uRect.xy + uv * uRect.zw; vL = uv;
     vec4 mv = modelViewMatrix * vec4(0., 0., 0., 1.); float k = 1. - uBias / length(mv.xyz); mv.xyz *= k;   // pulled toward the eye so the card never cuts into the ground
     mv.xy += (uv - uCenter) * uSize * k; gl_Position = projectionMatrix * mv; }`;
-const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec4 uFade; uniform float uSolid; uniform float uRim; varying vec2 vUv; varying vec2 vL;
+const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec3 uMid; uniform vec4 uFade; uniform float uSolid; uniform float uRim; varying vec2 vUv; varying vec2 vL;
   float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)) + uSeed) * 43758.5453); }
   float nn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + 1.), f.x), f.y); }
   void main(){ vec4 c = texture2D(map, vUv); if (uSolid > 0.){ vec2 o = uRim * vec2(1. / 3072., 1. / 1536.); float m = 1.;   // interior (all ring taps inside the sprite) -> opaque; outer rim keeps a soft ramp
@@ -56,7 +56,7 @@ const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint;
     c.a *= clamp(uFade.x + uFade.y * vL.x + uFade.z * vL.y, uFade.w, 1.);
     if (c.a < 0.02) discard;
     float lu = dot(c.rgb, vec3(.2126, .7152, .0722)); c.rgb = mix(vec3(lu), c.rgb, uSat);
-    c.rgb *= mix(vec3(1.), uShade, smoothstep(0.45, 0.04, lu));
+    c.rgb *= mix(vec3(1.), uShade, smoothstep(0.45, 0.04, lu)); c.rgb *= mix(vec3(1.), uMid, smoothstep(0.95, 0.62, lu) * smoothstep(0.3, 0.55, lu));
     gl_FragColor = vec4(c.rgb * uTint, c.a);
     #include <colorspace_fragment>
   }`;
@@ -64,12 +64,15 @@ const BB_GEO = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
 function billboard(tex, rect, size, center, opts = {}){
   const m = new THREE.ShaderMaterial({ vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: opts.depthWrite ?? true,
     uniforms: { map: { value: tex }, uRect: { value: new THREE.Vector4(...rect) }, uSize: { value: new THREE.Vector2(...size) }, uCenter: { value: new THREE.Vector2(...center) },
-      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uSolid: { value: opts.solid ?? 0 }, uRim: { value: +(Q.get('trim') ?? 5) }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
+      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uSolid: { value: opts.solid ?? 0 }, uRim: { value: +(Q.get('trim') ?? 5) }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uMid: { value: new THREE.Vector3(...(opts.mid ?? [1, 1, 1])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
   const b = new THREE.Mesh(BB_GEO, m); b.frustumCulled = false; return b;
 }
 // atlas rect for (col,row) of a grid; v flipped for GL
 function atlasRect(cols, rows, c, r){ return [c / cols, 1 - (r + 1) / rows, 1 / cols, 1 / rows]; }
 const SHEEP_CELL_W = +(Q.get('sw') || 1.9);      // world size of one sheep atlas cell (per unit sheep scale)
+const SHEEP_HEAD = (Q.get('shd') || '2.6,0.8,4').split(',').map(Number);   // multiplier on the sprite's dark pixels (plum head)
+const SHEEP_MID = (Q.get('smd') || '0.9,0.87,1.06').split(',').map(Number);    // multiplier on wool mid-tones (lavender shading)
+const SHEEP_SHO = (Q.get('sso') || '0.45,-1.1').split(',').map(Number);     // world x,z offset of the shadow-casting rig relative to the sprite
 const SHEEP_TINT = new THREE.Color(...(Q.get('st') || '0.93,0.86,0.97').split(',').map(Number));
 const DIR_SQ = +(Q.get('dq') || 0.6);          // favour side views (sprites were painted from higher up than the board camera)
 
@@ -556,7 +559,7 @@ class Sheep {
     this.legs = [];
     for (const [lx, lz] of [[0.36, 0.2], [0.36, -0.2], [-0.36, 0.2], [-0.36, -0.2]]){ const l = new THREE.Mesh(legGeo, faceMat); l.position.set(lx * 1.2, 0.38, lz * 0.9); this.body.add(l); this.legs.push(l); this.meshes.push(l); }
     for (const m of this.meshes){ m.castShadow = true; m.receiveShadow = false; m.material = shadowOnly; }   // 3D rig only casts the shadow; the look is the painted sprite
-    this.spr = billboard(TEX_SHEEP, atlasRect(8, 4, 0, 0), [1, 1], [0.5, 6 / 256], { bias: 0.9, tint: SHEEP_TINT }); this.root.add(this.spr); this.frame = -1; if (Q.has('nospr')) this.spr.visible = false;
+    this.spr = billboard(TEX_SHEEP, atlasRect(8, 4, 0, 0), [1, 1], [0.5, 6 / 256], { bias: 0.9, tint: SHEEP_TINT, shade: SHEEP_HEAD, mid: SHEEP_MID }); this.root.add(this.spr); this.frame = -1; if (Q.has('nospr')) this.spr.visible = false;
     this.hit = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.25, 1.2).translate(0.15, 0.62, 0), new THREE.MeshBasicMaterial({ visible: false })); this.root.add(this.hit); this.hit.userData.sheep = this;
     this.root.position.set(x, 0, z);
     this.heading = opts.heading ?? R(-Math.PI, Math.PI); this.root.rotation.y = this.heading; this.targetHeading = this.heading;
@@ -684,6 +687,7 @@ class Sheep {
     this.neck.position.y = 0.8 + (this.headPitch < -0.3 ? -0.06 : 0) * (-this.headPitch);
     this.ear1.rotation.x = 0.5 + Math.sin(time * 3 + this.phase) * 0.05; this['ear-1'].rotation.x = -0.5 - Math.sin(time * 2.6 + this.phase) * 0.05;
     this.root.rotation.y = this.heading;
+    if (SHEEP_SHO[0] || SHEEP_SHO[1]){ const a = this.heading, ca = Math.cos(a), sa = Math.sin(a); this.body.position.x = (SHEEP_SHO[0] * ca - SHEEP_SHO[1] * sa) / this.sc; this.body.position.z = (SHEEP_SHO[0] * sa + SHEEP_SHO[1] * ca) / this.sc; }
     this.phase += dt;
     this.pickFrame();
   }
