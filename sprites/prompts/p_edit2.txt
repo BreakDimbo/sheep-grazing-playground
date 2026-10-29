@@ -1,0 +1,16 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, same canvas size and framing), then copy the resulting PNG to /workspace/sheep/gen/edit2.png. Do not post-process it.
+
+Attached images:
+1. Our own cartoon tree sprite on flat magenta (#FF00FF). This is the image to edit.
+2. TARGET SILHOUETTE: white shape on magenta, same canvas and scale. The crown outline must fill this white shape (wide, irregular, lumpy top, rounded bottom). Keep one thin trunk at the bottom centre where image 1 has it.
+3. A loose shading/style reference only (do not copy it).
+
+Most important: the crown must be clearly DARKER and more strongly shaded than image 1.
+- Overall colour a medium-dark leaf green, not lime: mid tone #4f9a2c.
+- Light from the upper LEFT only. Only the upper-left lobes get a soft yellow-green highlight (#86c24a).
+- The RIGHT half and the lower part of the crown are in deep shade (#2c6e22), the far right edge darkest (#225a1a).
+- DEEP, DARK creases between the lobes (#1d4a16), clearly visible, especially on the shaded right side, so each lobe reads as a separate soft clay form.
+- Lobes of mixed sizes (a few large, several medium), overlapping irregularly, NOT an even grid of round balls.
+- Matte, smooth, soft clay, no outlines, no specular glints, no noise.
+- Trunk plain dark brown (#4a3326).
+- Background perfectly flat uniform pure magenta #FF00FF, no shadow, no ground, no text.
