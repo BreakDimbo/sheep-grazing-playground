@@ -625,7 +625,7 @@ class Sheep {
     this.think(dt);
     let want = 0;
     if (this.state === 'walk' && this.goal){
-      want = this.lock === 'walk' ? 0.85 : 0.7;
+      want = (this.lock === 'walk' ? 0.85 : 0.7) * (this.pace ?? 1);
       this.targetHeading = Math.atan2(-(this.goal[1] - this.z), this.goal[0] - this.x);
     } else if (this.state === 'graze'){
       want = (Math.sin(this.phase * 0.31 + time * 0.23) > 0.65) ? 0.1 : 0;
@@ -863,9 +863,10 @@ addEventListener('resize', () => { resize(); });
 resize(); homeView(); populate();
 setTimeout(() => hint.classList.add('off'), 7000);
 const HOOKS = [], POST = {};
+const TSC = +(Q.get('ts') ?? 1);   // capture-only time scale
 const clock = new THREE.Clock(); let time = 0, wearAcc = 0, frames = 0;
 renderer.setAnimationLoop(() => {
-  const raw = Math.min(clock.getDelta(), 0.05), dt = FREEZE ? 0 : raw; time += dt;
+  const raw = Math.min(clock.getDelta(), 0.05) * TSC, dt = FREEZE ? 0 : raw; time += dt;
   for (const s of [...sheep]) s.update(dt, time);
   for (const t of trees){ t.crown.rotation.z = Math.sin(time * 0.8 + t.phase) * 0.01; t.crown.rotation.x = Math.cos(time * 0.6 + t.phase) * 0.008; }
   for (const c of clouds){ c.m.position.x = c.p.x + Math.sin(time * 0.05 + c.ph) * 0.8; c.m.position.y = c.p.y + Math.sin(time * 0.4 + c.ph) * 0.08; }
@@ -879,5 +880,5 @@ renderer.setAnimationLoop(() => {
 });
 window.__sheep = { sprInfo: () => sheep.map(s => { const v = s.root.position.clone().project(camera), d = -s.root.position.clone().applyMatrix4(camera.matrixWorldInverse).z;
     return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: SHEEP_CELL_W * s.root.scale.x * FPX / d, frame: s.frame }; }), treeInfo: () => trees.map(t => { const u = t.grp.userData.bb, w = new THREE.Vector3(t.grp.position.x, u.cy, t.grp.position.z), v = w.clone().project(camera), d = -w.clone().applyMatrix4(camera.matrixWorldInverse).z;
-    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: u.cw * FPX / d, ccy: u.ccy, idx: u.cell }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, THREE, scene, renderer, sun, hemi, SUN_DIR, trees, clouds, ground, boardGeo, groundTex, GRADE, CLOUD_GRADE, woolMat, HOOKS, POST, CAM, MOBILE, E, W, D, wearMesh, canvas, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
+    return { ax: (v.x + 1) / 2 * CAM.img[0], ay: (1 - v.y) / 2 * CAM.img[1], cell: u.cw * FPX / d, ccy: u.ccy, idx: u.cell }; }), sheep, select, camera, controls, homeView, uv2w, w2uv, THREE, Sheep, walkable, pickGround, pickSheep, angDiff, scene, renderer, sun, hemi, SUN_DIR, trees, clouds, ground, boardGeo, groundTex, GRADE, CLOUD_GRADE, woolMat, HOOKS, POST, CAM, MOBILE, E, W, D, wearMesh, canvas, get fps(){ return frames / Math.max(1e-3, clock.elapsedTime); } };
 if (window.PLUS) import('./plus/plus.js');

@@ -35,8 +35,8 @@ const over = new THREE.Mesh(S.boardGeo, mat); over.position.y = 0.008; over.rend
 // sprites: the same cloud shadow and gusts on trees and sheep (CPU-sampled at their feet)
 const bb = o => { const m = o.material; if (!m.userData.t0) m.userData.t0 = m.uniforms.uTint.value.clone(); return m; };
 const TMP = new THREE.Color();
-const TS = +(new URLSearchParams(location.search).get('ts') ?? 1); let wt = 0;
-S.HOOKS.push((dt) => { wt += dt * TS; const time = wt;
+let wt = 0;
+S.HOOKS.push((dt) => { wt += dt; const time = wt;
   const sd = L.dir.y > 0.05 ? L.dir : new THREE.Vector3(0, 1, 0), sky = S.hemi.color, sc = S.sun.color, k = Math.max(0, Math.min(1, L.sunK)) * 0.78;
   U.uT.value = time; U.uSd.value.copy(sd); U.uK.value = k;
   const cosr = Math.max(sd.y, 0); U.uTint.value.set(sky.r / (sky.r + sc.r * cosr + 1e-4), sky.g / (sky.g + sc.g * cosr + 1e-4), sky.b / (sky.b + sc.b * cosr + 1e-4));

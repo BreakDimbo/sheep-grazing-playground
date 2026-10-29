@@ -69,3 +69,4 @@ S.HOOKS.push(dt => {
 S.setHour = h => { hour = h; hold = true; frame = 0; apply(h); };
 apply(hour);
 import('./wind.js').catch(e => console.warn('wind', e));
+import('./flock.js').catch(e => console.warn('flock', e));
