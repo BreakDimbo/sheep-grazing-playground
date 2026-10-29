@@ -295,8 +295,8 @@ function paintGround(){
   const img = g.getImageData(0, 0, TEXW, TEXH), d = img.data;
   const blk = Math.max(2, Math.round(3.2 * s * +(Q.get('eb') || 1)));
   const wash = [166, 204, 104], CR = 2.6;
-  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 2), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1.8), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.8), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.2), A0 = +(Q.get('a0') ?? -0.05), RKP = +(Q.get('rkp') ?? 1);
-  const BA = +(Q.get('ba') ?? 0), BF = +(Q.get('bf') ?? 6), BS = +(Q.get('bs') ?? 0.25), FKT = +(Q.get('fkt') ?? 1.8), FSQ = +(Q.get('fsq') ?? 1), PZ = +(Q.get('pz') ?? 1), EMD = +(Q.get('emd') ?? 1), HZ = +(Q.get('hz') ?? 0.3), PW = +(Q.get('pw') ?? 1.5), CM0 = +(Q.get('cm0') ?? 0), EBL = +(Q.get('ebl') ?? 0), EBR = +(Q.get('ebr') ?? 0.8), EBK = +(Q.get('ebk') ?? 1);
+  const SOFT = +(Q.get('es') ?? 1), SG = +(Q.get('sg') ?? 0.1), SP = +(Q.get('sp') || 0.5), PC = (Q.get('pc') || '228,221,208').split(',').map(Number), FK = +(Q.get('fk') ?? 1.3), FP = +(Q.get('fp') ?? 2), FB = +(Q.get('fb') ?? 3), FT = +(Q.get('ft') ?? 0), FA = +(Q.get('fa') ?? 1.8), WF = +(Q.get('wf') ?? 0.08), EF0 = +(Q.get('ef0') ?? 0.8), FLK = +(Q.get('flk') ?? 1), FV = +(Q.get('fv') ?? 0.2), A0 = +(Q.get('a0') ?? -0.05), RKP = +(Q.get('rkp') ?? 1);
+  const BA = +(Q.get('ba') ?? 0), BF = +(Q.get('bf') ?? 6), BS = +(Q.get('bs') ?? 0.25), FKT = +(Q.get('fkt') ?? 1.8), FSQ = +(Q.get('fsq') ?? 1), PZ = +(Q.get('pz') ?? 1), EMD = +(Q.get('emd') ?? 1), HZ = +(Q.get('hz') ?? 0.3), PW = +(Q.get('pw') ?? 1.1), CM0 = +(Q.get('cm0') ?? 0), EBL = +(Q.get('ebl') ?? 0), EBR = +(Q.get('ebr') ?? 0.8), EBK = +(Q.get('ebk') ?? 1);
   const bay = (t, sd) => { if (!BA) return 0; const q = t * BF + sd * 0.37, i0 = Math.floor(q), f = q - i0, w = clamp((f - (1 - BS)) / BS, 0, 1), ww = w * w * (3 - 2 * w);
     return BA * (lerp(hash2(i0, sd * 91 + 5), hash2(i0 + 1, sd * 91 + 5), ww) - 0.5) * 2; };            // stepped bays: piecewise-flat offsets with short ramps
   let EK = 0;
@@ -307,6 +307,7 @@ function paintGround(){
     EK = e === t ? 2 : 0; return e; };
   const kAt = (x, y, e) => (e + (fbm(x * 0.012 / s, y * 0.012 / s) - 0.5) * 0.55 * EBJ + (vnoise(x * 0.06 / s, y * 0.06 / s) - 0.5) * 0.12 + EDGE_O) / EDGE_W;
   const RBF = +(Q.get('rbf') ?? 1.15), BPL = +(Q.get('bpl') ?? 0), RBP = +(Q.get('rbp') ?? 0.6), RBO = +(Q.get('rbo') ?? 0.6);   // RBO pulls the river's paint end back toward the board                          // river blocks survive more (blue flecks); outer blocks paler
+  const PZA = +(Q.get('pza') ?? 60);   // alpha of discarded texels: >0 keeps their paper RGB through the canvas's premultiplied storage (no dark block outlines after filtering)
   let cBK = -1, cKB = 0, cTop = false; const band = EBL > 0 ? new Uint8Array(TEXW * TEXH) : null;
   for (let y = 0; y < TEXH; y++){
     for (let x = 0; x < TEXW; x++){
@@ -337,7 +338,7 @@ function paintGround(){
         }
         if (a && sm < 1){ let sf = kk >= A0 ? EF0 + (1 - EF0) * sm : FLK; sf += (1 - sf) * bl; d[i] = lerp(PC[0], d[i], sf); d[i + 1] = lerp(PC[1], d[i + 1], sf); d[i + 2] = lerp(PC[2], d[i + 2], sf); } }
       } else if (k >= 1) a = 1; else if (k <= 0) a = 0; else a = hash2(Math.floor(x / blk), Math.floor(y / blk)) < k * k * (3 - 2 * k) ? 1 : 0;
-      d[i + 3] = a ? 255 : 0; if (!a && PZ){ d[i] = PC[0]; d[i + 1] = PC[1]; d[i + 2] = PC[2]; }   // paper colour under discarded texels (no dark fringe from filtering)
+      d[i + 3] = a ? 255 : PZA; if (!a && PZ){ d[i] = PC[0]; d[i + 1] = PC[1]; d[i + 2] = PC[2]; }   // paper colour under discarded texels (no dark fringe from filtering)
       const f = clamp(1 - (ee - 0.05) / 0.9, 0, 1) * WF * (1 - bl);
       if (f > 0 && a){ d[i] = lerp(d[i], wash[0], f); d[i + 1] = lerp(d[i + 1], wash[1], f); d[i + 2] = lerp(d[i + 2], wash[2], f); }
     }
