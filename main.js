@@ -74,7 +74,7 @@ const SHEEP_CELL_W = +(Q.get('sw') || 1.9);      // world size of one sheep atla
 const SHEEP_HEAD = (Q.get('shd') || '2.6,0.8,4').split(',').map(Number);   // multiplier on the sprite's dark pixels (plum head)
 const SHEEP_MID = (Q.get('smd') || '0.9,0.87,1.06').split(',').map(Number);    // multiplier on wool mid-tones (lavender shading)
 const SHEEP_SHO = (Q.get('sso') || '0.45,-1.1').split(',').map(Number);     // world x,z offset of the shadow-casting rig relative to the sprite
-const SHEEP_TINT = new THREE.Color(...(Q.get('st') || '0.93,0.86,0.97').split(',').map(Number));
+const SHEEP_TINT = new THREE.Color(...(Q.get('st') || '0.91,0.875,0.95').split(',').map(Number));
 const DIR_SQ = +(Q.get('dq') || 0.6);          // favour side views (sprites were painted from higher up than the board camera)
 
 // ---------- renderer / scene / camera ----------
