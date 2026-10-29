@@ -16,18 +16,23 @@ const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, ble
     void main(){
       vec2 p = vW.xz; float t = uT;
       // slopes: slow irregular swell from warped noise, no fine chop
+      // calm water: a few long swells in irrational directions (no noise lattice, so no regular bands),
+      // phase-warped by low noise so the crests wander; the moon lies on it as a soft broken column
+      float w = n(p * .35 + t * .03) * 2.2 + n(p * .8 - t * .02) * .9;
       vec2 s = vec2(0.);
-      // calm water: long slow swells only (0.3-0.8 m), so the moon lies on it as a soft broken column, not sparkles
-      vec2 q = p + vec2(n(p * .9 + t * .05), n(p * .9 + 7.3 - t * .04)) * .8;          // warped, so the swell is irregular
-      s += (grad(q * 2.0 + vec2(0., t * .16)) - .5) * .045 + (grad(q * 4.3 - vec2(t * .12, 0.)) - .5) * .022;
+      vec2 d1 = vec2(.83, .56), d2 = vec2(-.38, .92), d3 = vec2(.97, -.24), d4 = vec2(-.71, -.70);
+      s += d1 * cos(dot(p, d1) * 2.1 + w + t * .7) * .020;
+      s += d2 * cos(dot(p, d2) * 3.3 + w * 1.3 - t * .9) * .014;
+      s += d3 * cos(dot(p, d3) * 5.2 + w * .7 + t * 1.1) * .009;
+      s += d4 * cos(dot(p, d4) * 7.9 - w + t * 1.4) * .006;
       vec3 N = normalize(vec3(-s.x, 1., -s.y));
       vec3 V = normalize(cameraPosition - vW), R = reflect(-V, N);
       float c = dot(R, uMoon);
-      float g = exp(-(1. - c) / .0016);                                // soft lobe, ~3 degrees: the moon's mirror image smeared by the swell
+      float g = exp(-(1. - c) / .0006);                                // soft lobe, ~3 degrees: the moon's mirror image smeared by the swell
       float F = .02 + .98 * pow(1. - max(dot(V, N), 0.), 5.);           // Fresnel for water
       float x = vUv.x, edge = smoothstep(0., .18, x) * smoothstep(1., .82, x), ends = smoothstep(.3, 1.5, vUv.y) * smoothstep(uLen - .3, uLen - 1.5, vUv.y);
       vec4 gt = texture2D(uG, vT); float wet = step(.5, gt.a) * smoothstep(.04, .14, gt.b - gt.r);
-      float I = g * F * .85 * uK * edge * ends * wet;
+      float I = g * F * .8 * uK * edge * ends * wet;
       gl_FragColor = vec4(vec3(.80, .86, .95) * min(I, 1.), 0.);
       #include <colorspace_fragment>
     }` });
