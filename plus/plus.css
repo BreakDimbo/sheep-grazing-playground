@@ -13,3 +13,4 @@
 body.clean #tod{display:none}
 @media (max-width:640px){#trk{width:140px}}
 #snd{display:none} /* until the sound feature ships */
+#tiltbtn{ white-space: nowrap; margin-left: 10px; font: inherit; font-size: 11px; color: var(--ui2, #8a8275); background: none; border: 1px solid currentColor; border-radius: 9px; padding: 1px 8px; opacity: .8; cursor: pointer; }
