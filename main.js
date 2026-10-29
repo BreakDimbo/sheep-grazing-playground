@@ -472,10 +472,10 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
   { const T = SPR.trees, c = T.cells[cell], cols = T.cols, rows = Math.ceil(T.cells.length / cols);
     const cw = 1 / 0.96 / c.w * TREE_K * tk;                                   // world size of one atlas cell (grp is scaled by size)
     const ccy = 6 / T.cell + c.h - c.w * 0.5;                             // crown centre inside the cell (round crown on top)
-    const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (!pink) tc.multiplyScalar(+(Q.get('tgb') ?? 1.08)); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
+    const tc = new THREE.Color(tintC ?? 0xffffff); if (fit && fit.b) tc.multiplyScalar(fit.b); if (!pink) tc.multiplyScalar(+(Q.get('tgb') ?? 1.08)); if (!pink && (Q.get('ggm') || LAYOUT.greenMul)) tc.multiply(new THREE.Color().setRGB(...(Q.get('ggm') || LAYOUT.greenMul).toString().split(',').map(Number), THREE.LinearSRGBColorSpace)); if (fit && fit.g) tc.multiply(new THREE.Color().setRGB(...fit.g, THREE.LinearSRGBColorSpace));
     if (pink) tc.multiply(new THREE.Color().setRGB(...(Q.get('pt') || LAYOUT.pinkTint || '1.21,1.43,0.9').toString().split(',').map(Number), THREE.SRGBColorSpace));
     const cen = fit ? [0.5 - (fit.dx || 0) / fit.cpx, ccy + (fit.dy || 0) / fit.cpx] : [0.5, ccy];
-    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, solid: pink ? 0 : +(Q.get('tso') ?? 0.9), sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78, shade: pink ? (Q.get('sh') || '0.88,0.6,2.3').split(',').map(Number) : undefined });
+    const b = billboard(TEX_TREES, atlasRect(cols, rows, cell % cols, (cell / cols) | 0), [cw * size, cw * size], cen, { tint: tc, bias: size * 0.7, solid: pink ? 0 : +(Q.get('tso') ?? 0.9), sat: pink ? +(Q.get('ps') ?? 0.55) : 0.78, shade: pink ? (Q.get('sh') || '0.88,0.6,2.3').split(',').map(Number) : (Q.get('gsh') || LAYOUT.greenShade || '1,1,1').toString().split(',').map(Number) });
     b.position.set(0, cy, 0); grp.add(b); if (Q.has('notree')) b.visible = false; grp.userData.bb = { b, cw: cw * size, ccy, cell, cy: cy * size }; }
   if (false && far){ const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 7).translate(0, 0.15, 0), new THREE.MeshLambertMaterial({ color: 0x3a2a1c })); trunk.castShadow = true; grp.add(trunk); }
   grp.rotation.y = R(0, 6.28); scene.add(grp);
@@ -483,7 +483,7 @@ function makeTree(px, py, wpx, kind, cell, tintC, tk = 1, fit = null){
 }
 const TREE_CELLS = [0, 2, 3, 1, 6, 2, 1], TREE_SCALE = [1, 1, 1, 1, 1, 1, 1.18], TREE_TINT = [0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xd8e4c8, 0xeac4e6, 0xd8e4c8, 0xd8e4c8];
 const GCL = (Q.get('gcl') ?? LAYOUT.greenCells ?? '').toString().split(',');                   // per-tree atlas cell override (smooth-lobe crowns, cells 32-35)
-LAYOUT.treesPx.forEach(([x, y, w, k], i) => { let f = LAYOUT.treesFit ? LAYOUT.treesFit[i] : null; if (f && GCL[i] !== undefined && GCL[i] !== '' && +GCL[i] >= 0) f = { ...f, cell: +GCL[i] }; if (f && Q.get('tf' + i)){ const [s1, dx1, dy1] = Q.get('tf' + i).split(',').map(Number); f = { ...f, s: s1, dx: dx1, dy: dy1 }; } makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i], f); });
+LAYOUT.treesPx.forEach(([x, y, w, k], i) => { let f = LAYOUT.treesFit ? LAYOUT.treesFit[i] : null; if (f && GCL[i] !== undefined && GCL[i] !== '' && +GCL[i] >= 0) f = { ...f, cell: +GCL[i] }; if (f && Q.get('tf' + i)){ const [s1, dx1, dy1, b1] = Q.get('tf' + i).split(',').map(Number); f = { ...f, s: s1, dx: dx1, dy: dy1, b: b1 ?? f.b }; } makeTree(x, y, w, k, TREE_CELLS[i], TREE_TINT[i], TREE_SCALE[i], f); });
 
 // ---------- clouds (placed on the rays of the reference pixels) ----------
 const clouds = [];
