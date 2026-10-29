@@ -1,0 +1,15 @@
+Use your built-in image generation tool to create a new image (you may use image-to-image editing of the first attached image), same 1024x1024 canvas and framing, then copy the resulting PNG to /workspace/sheep/gen/m6b.png. Do not post-process it.
+
+Attached images:
+1. Our current tree crown sprite on flat magenta (#FF00FF): use it only for size, framing, light direction and the general colour.
+2. TARGET SILHOUETTE: white shape on magenta, same canvas and scale. The crown must fill this white shape.
+3. STYLE TARGET: a reference crop of the kind of tree we want. Match its LOOK only (how the forms are modelled, the softness, the matte finish). Do not copy its pixels, background, grass or shadow.
+
+What to paint:
+- About 5 to 7 large melted masses that sag and flow into each other, with a soft irregular knobbly outline and a ROUNDED bottom.
+- Melted, soft clay / putty forms that flow into each other, like a slightly melted clay sculpture, NOT a cluster of balls. Absolutely NO small spheres, no bubbles, no grape-like clusters.
+- Soft, LOW-CONTRAST creases between the masses: gentle shallow dips, a little darker than their surroundings, never black lines.
+- Matte gouache finish, smooth gradients, no outlines, no specular glints, no noise, no texture dots.
+- Light from the upper left; the right and lower parts gently shaded.
+- Colour: medium fresh leaf green like the style target (mid #6cbf3c, lit #93d45a, shade #3f8a2a). A short plain dark brown trunk stub at the bottom centre where the target shows it.
+- Background perfectly flat uniform pure magenta #FF00FF, no ground, no shadow, no text.
