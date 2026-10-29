@@ -1,0 +1,10 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, keep the same framing and canvas), then copy the resulting PNG to /workspace/sheep/gen/edit0.png. Do not post-process it.
+
+The first attached image is our own cartoon tree sprite on a flat magenta (#FF00FF) background. The second attached image is only a loose STYLE reference for surface softness (do not copy it).
+
+Edit instructions:
+- Keep EXACTLY the same overall silhouette outline, size, position in the canvas, and the small trunk at the bottom (make the trunk a plain warm dark brown, #4a3326, no pink tint).
+- Merge the many small puffs inside the crown into fewer, LARGER soft clay-like lobes (about 9-12 visible lobes in total), with soft, broad, slightly darker creases between them.
+- Make the green overall a little darker and less saturated (mid tone around #5f9e35, shade #3a7428, highlight #8fc755), lit softly from the upper left, lower-right third in deeper shade.
+- Surface very smooth and matte like soft modelling clay, soft gradients, no specular highlights, no texture noise, no outlines.
+- Background must stay perfectly flat uniform pure magenta #FF00FF, no shadow, no ground, no text.

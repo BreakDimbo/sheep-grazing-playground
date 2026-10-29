@@ -1,0 +1,10 @@
+Use your built-in image generation tool to EDIT the first attached image (image-to-image edit, keep the same framing and canvas), then copy the resulting PNG to /workspace/sheep/gen/cedit0.png. Do not post-process it.
+
+The first attached image is our own soft cartoon cloud sprite on a flat pure green (#00FF00) background. The second attached image is only a loose STYLE reference (do not copy it).
+
+Edit instructions:
+- Keep the same overall cloud silhouette, size and position in the canvas.
+- Give the lower half crisper, deeper folds: clearly defined rounded lobes along the bottom with distinct soft lavender-violet creases between them (crease colour around #9c94d8, lobe shade #c9c3ec), like a soft clay or cotton cloud.
+- The upper part stays warm cream white (#f1e8dc) and its top edge should become very soft and pale, almost the same cream as paper (#ece5da), as if it fades into the paper, with less defined outline at the top-left.
+- Matte soft surface, no outlines, no text, no sky.
+- Background must stay perfectly flat uniform pure green #00FF00, no shadow, no gradient.
