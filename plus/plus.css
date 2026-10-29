@@ -12,3 +12,4 @@
 #hint,#credit,#ed{color:var(--ui)!important;transition:color 1.2s,opacity .8s}
 body.clean #tod{display:none}
 @media (max-width:640px){#trk{width:140px}}
+#snd{display:none} /* until the sound feature ships */
