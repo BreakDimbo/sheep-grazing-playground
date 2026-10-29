@@ -33,12 +33,12 @@ const gmat = new THREE.ShaderMaterial({ uniforms: GU, transparent: true, depthWr
 const wetM = new THREE.Mesh(S.boardGeo, gmat); wetM.position.y = 0.009; wetM.renderOrder = -1; wetM.visible = false; scene.add(wetM);
 // 2) rings on the river: each drop a thin crest (sky reflected) with a darker trough inside, expanding and fading
 let rib = null; scene.traverse(o => { if (o.material === scene.userData.riverMat) rib = o; });
-const RU = { uT: { value: 0 }, uK: { value: 0 }, uSky: { value: new THREE.Vector3() }, uLen: { value: rib.material.uniforms.uLen.value }, uG: { value: S.groundTex } };
+const RU = { uT: { value: 0 }, uK: { value: 0 }, uSky: { value: new THREE.Vector3() }, uVis: { value: 1 }, uLen: { value: rib.material.uniforms.uLen.value }, uG: { value: S.groundTex } };
 const rmat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: RU,
   blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
   vertexShader: `attribute vec2 tuv; varying vec2 vUv, vT; varying vec3 vW;
     void main(){ vUv = uv; vT = tuv; vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-  fragmentShader: `uniform float uT, uK, uLen; uniform vec3 uSky; uniform sampler2D uG; varying vec2 vUv, vT; varying vec3 vW; ${NOISE}
+  fragmentShader: `uniform float uT, uK, uLen, uVis; uniform vec3 uSky; uniform sampler2D uG; varying vec2 vUv, vT; varying vec3 vW; ${NOISE}
     void main(){
       vec2 p = vW.xz; const float C = .2; vec2 b = floor(p / C); float cr = 0., tr = 0.;
       for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++){ vec2 id = b + vec2(i, j);
@@ -49,7 +49,7 @@ const rmat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, si
         cr += exp(-pow(d / w, 2.)) * a; tr += exp(-pow((d + 1.9 * w) / w, 2.)) * a; }
       float x = vUv.x, edge = smoothstep(0., .15, x) * smoothstep(1., .85, x), ends = smoothstep(.3, 1.2, vUv.y) * smoothstep(uLen - .3, uLen - 1.2, vUv.y);
       vec4 gt = texture2D(uG, vT); float m = step(.5, gt.a) * smoothstep(.04, .14, gt.b - gt.r) * edge * ends;
-      float lit = min(cr, 1.) * .095 * m, dk = min(tr, 1.) * .07 * m;
+      m *= uVis; float lit = min(cr, 1.) * .085 * m, dk = min(tr, 1.) * .065 * m;
       gl_FragColor = vec4(uSky * lit, dk);
       #include <colorspace_fragment>
     }` });
@@ -85,7 +85,9 @@ S.HOOKS.push(dt => {
   if (!R.T && R.k < .35 && R.A > 0){ R.D -= dt / 55; if (R.D <= 0){ R.D = 0; R.A = 0; } }
   if (S.flock && S.flock.huddle && !R.T && R.k < .3) S.flock.huddle = null;
   wetM.visible = R.A > 0.002; GU.uA.value = R.A; GU.uD.value = R.D; GU.uDry.value = R.T ? 0 : ss(R.k, .35, 0);
-  rings.visible = R.k > 0.01; RU.uT.value = R.t; RU.uK.value = R.k;
+  // a ring is ~0.1 m across: on a small board that is a couple of pixels, a speck, so they fade out below ~60% board size
+  const bs = Math.min(innerWidth / 1440, innerHeight / 900); RU.uVis.value = ss(bs, .5, .8);
+  rings.visible = R.k > 0.01 && RU.uVis.value > 0.01; RU.uT.value = R.t; RU.uK.value = R.k;
   const sk = S.hemi.color; RU.uSky.value.set(sk.r, sk.g, sk.b).multiplyScalar(.45 / Math.PI * 3);
   R.col.set(sk.r, sk.g, sk.b).multiplyScalar(1 / Math.PI).addScalar(.06);
 });
