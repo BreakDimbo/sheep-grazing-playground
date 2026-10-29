@@ -46,7 +46,7 @@ const BB_VS = `uniform vec4 uRect; uniform vec2 uSize; uniform vec2 uCenter; uni
   void main(){ vUv = uRect.xy + uv * uRect.zw; vL = uv;
     vec4 mv = modelViewMatrix * vec4(0., 0., 0., 1.); float k = 1. - uBias / length(mv.xyz); mv.xyz *= k;   // pulled toward the eye so the card never cuts into the ground
     mv.xy += (uv - uCenter) * uSize * k; gl_Position = projectionMatrix * mv; }`;
-const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec3 uMid; uniform vec4 uFade; uniform float uSolid; uniform float uRim; varying vec2 vUv; varying vec2 vL;
+const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint; uniform float uAlpha; uniform float uSeed; uniform float uSat; uniform vec3 uShade; uniform vec3 uMid; uniform vec2 uSharp; uniform vec4 uFade; uniform float uSolid; uniform float uRim; varying vec2 vUv; varying vec2 vL;
   float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)) + uSeed) * 43758.5453); }
   float nn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + 1.), f.x), f.y); }
   void main(){ vec4 c = texture2D(map, vUv); if (uSolid > 0.){ vec2 o = uRim * vec2(1. / 3072., 1. / 1536.); float m = 1.;   // interior (all ring taps inside the sprite) -> opaque; outer rim keeps a soft ramp
@@ -55,6 +55,7 @@ const BB_FS = `uniform sampler2D map; uniform float uReveal; uniform vec3 uTint;
     if (uReveal < 1.){ float n = nn(vL * 9.) * 0.65 + nn(vL * 23.) * 0.35; if (n * 0.75 + vL.x * 0.45 > uReveal * 1.2) discard; }
     c.a *= clamp(uFade.x + uFade.y * vL.x + uFade.z * vL.y, uFade.w, 1.);
     if (c.a < 0.02) discard;
+    if (uSharp.x > 0.){ vec3 bl = vec3(0.); float o = uSharp.y / 1024.; for (int k = 0; k < 8; k++){ float an = float(k) * .785398; vec4 t = texture2D(map, vUv + o * vec2(cos(an), sin(an))); bl += mix(c.rgb, t.rgb, step(0.3, t.a)); } vec3 W = vec3(.2126, .7152, .0722); float dd = dot(c.rgb - bl / 8., W); c.rgb = clamp(c.rgb + uSharp.x * dd * (dd < 0. ? vec3(1.05, 1.1, .8) : vec3(1.)), 0., 1.); }   // local contrast (cloud folds)
     float lu = dot(c.rgb, vec3(.2126, .7152, .0722)); c.rgb = mix(vec3(lu), c.rgb, uSat);
     c.rgb *= mix(vec3(1.), uShade, smoothstep(0.45, 0.04, lu)); c.rgb *= mix(vec3(1.), uMid, smoothstep(0.95, 0.62, lu) * smoothstep(0.3, 0.55, lu));
     gl_FragColor = vec4(c.rgb * uTint, c.a);
@@ -64,7 +65,7 @@ const BB_GEO = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
 function billboard(tex, rect, size, center, opts = {}){
   const m = new THREE.ShaderMaterial({ vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: opts.depthWrite ?? true,
     uniforms: { map: { value: tex }, uRect: { value: new THREE.Vector4(...rect) }, uSize: { value: new THREE.Vector2(...size) }, uCenter: { value: new THREE.Vector2(...center) },
-      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uSolid: { value: opts.solid ?? 0 }, uRim: { value: +(Q.get('trim') ?? 5) }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uMid: { value: new THREE.Vector3(...(opts.mid ?? [1, 1, 1])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
+      uReveal: { value: 1 }, uBias: { value: opts.bias ?? 0 }, uSolid: { value: opts.solid ?? 0 }, uRim: { value: +(Q.get('trim') ?? 5) }, uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) }, uAlpha: { value: opts.alpha ?? 1 }, uSat: { value: opts.sat ?? 1 }, uShade: { value: new THREE.Vector3(...(opts.shade ?? [1, 1, 1])) }, uMid: { value: new THREE.Vector3(...(opts.mid ?? [1, 1, 1])) }, uSharp: { value: new THREE.Vector2(...(opts.sharp ?? [0, 0])) }, uFade: { value: new THREE.Vector4(...(opts.fade ?? [1, 0, 0, 1])) }, uSeed: { value: Math.random() * 10 } } });
   const b = new THREE.Mesh(BB_GEO, m); b.frustumCulled = false; return b;
 }
 // atlas rect for (col,row) of a grid; v flipped for GL
@@ -503,7 +504,7 @@ function makeCloud(p, s){
 const CLOUD_LOOK = [[0, 1.0, 0.92], [2, 1.0, 0.8]];       // atlas cell, x stretch, opacity
 LAYOUT.cloudsPx.forEach(([x, y, w], i) => { const p = rayAtPixel(x + w * 0.07, y + w * 0.05, -12.8); const ww = 1.1 * w * p.distanceTo(refCam.position) / FPX * (i ? 1 : +(Q.get('cls') ?? 1.15));
   const [cell, sx, al] = CLOUD_LOOK[i] || CLOUD_LOOK[0], C = SPR.clouds, c = C.cells[cell], cs = ww / (c.w * sx);
-  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: i ? al : Math.min(1, al * +(Q.get('cla') ?? 1.08)), fade: i ? [1, 0, 0, 1] : [0.55, 0.75, -0.55, 0.12] });
+  const m = billboard(TEX_CLOUDS, atlasRect(C.cols, Math.ceil(C.cells.length / C.cols), cell % C.cols, (cell / C.cols) | 0), [cs * sx, cs], [0.5, 0.5], { depthWrite: false, alpha: i ? al : Math.min(1, al * +(Q.get('cla') ?? 1.08)), fade: i ? [1, 0, 0, 1] : [0.55, 0.75, -0.55, 0.12], mid: i ? [1, 1, 1] : (Q.get('clm') || '1,1,1').split(',').map(Number), shade: i ? [1, 1, 1] : (Q.get('clsh') || '1,1,1').split(',').map(Number), sharp: i ? [0, 0] : (Q.get('clk') || '1.2,14').split(',').map(Number) });   // clm/clsh deepen the main cloud's folds
   m.position.copy(p); m.renderOrder = 3; scene.add(m); clouds.push({ m, p: p.clone(), ph: 0 }); });
 
 // ---------- sheep ----------
